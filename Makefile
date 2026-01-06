@@ -1,23 +1,23 @@
 CC = gcc
 CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32
 
-OBJS = boot.o kernel.o
+OBJS = bootloader/sos_boot.o kernel/sos_kernel.o
 
-all: smol.bin
+all: SmolOS.bin
 
-smol.bin: $(OBJS)
-	$(CC) -m32 -nostdlib -o smol.bin $(OBJS) -T linker.ld
+SmolOS.bin: $(OBJS)
+	$(CC) -m32 -nostdlib -o SmolOS.bin $(OBJS) -T linker/sos_linker.ld
 
-boot.o: boot.s
-	$(CC) $(CFLAGS) -c boot.s -o boot.o
+bootloader/sos_boot.o: bootloader/sos_boot.s
+	$(CC) $(CFLAGS) -c bootloader/sos_boot.s -o bootloader/sos_boot.o
 
-kernel.o: kernel.c
-	$(CC) $(CFLAGS) -c kernel.c -o kernel.o
+kernel/sos_kernel.o: kernel/sos_kernel.c
+	$(CC) $(CFLAGS) -c kernel/sos_kernel.c -o kernel/sos_kernel.o
 
 clean:
-	rm -f *.o smol.bin
+	rm -f bootloader/*.o kernel/*.o SmolOS.bin
 
-run: smol.bin
-	qemu-system-i386 -kernel smol.bin
+run: SmolOS.bin
+	qemu-system-i386 -kernel SmolOS.bin
 
 .PHONY: all clean run

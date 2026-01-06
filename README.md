@@ -1,5 +1,18 @@
 # Documentation
-Currently, the minimal version of SmolOS which contains only the bootloader, kernel and helper files.
+
+## Directory Tree
+
+```bash
+├── bootloader
+│   └── sos_boot.s
+├── kernel
+│   └── sos_kernel.c
+├── linker
+│   └── sos_linker.ld
+├── Makefile
+└── README.md
+
+```
 
 ## Requirements
 * gcc-multilib
