@@ -1,4 +1,5 @@
 # Documentation
+Implementing video graphics array (VGA). 
 
 ## Directory Tree
 
@@ -9,6 +10,9 @@
 │   └── sos_kernel.c
 ├── linker
 │   └── sos_linker.ld
+├── vga
+|   |── sos_vga.h
+│   └── sos_vga.c
 ├── Makefile
 └── README.md
 
