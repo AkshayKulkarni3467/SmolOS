@@ -25,4 +25,11 @@ int snprintf(char* str, size_t size, const char* format, ...) {
     return strlen(format);
 }
 
+FILE* fopen(const char* filename, const char* mode) { return 0; }
+int fclose(FILE* stream) { return 0; }
+size_t fread(void* ptr, size_t size, size_t count, FILE* stream) { return 0; }
+size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream) { return 0; }
+int fseek(FILE* stream, long offset, int whence) { return 0; }
+long ftell(FILE* stream) { return 0; }
+
 

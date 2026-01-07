@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SMOLOS_STRING_H
 #define INCLUDE_SMOLOS_STRING_H
 
-#include <stddef.h>
+#include "sos_stddef.h"
 
 size_t strlen(const char* str);
 char* strcpy(char* destination, const char* source);

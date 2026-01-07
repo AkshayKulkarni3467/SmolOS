@@ -2,7 +2,7 @@
 #define INCLUDE_SMOLOS_VGA_H
 
 #include <stdint.h>
-#include <stddef.h>
+#include "sos_stddef.h"
 
 #define WIDTH 80
 #define HEIGHT 25
