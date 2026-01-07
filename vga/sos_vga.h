@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SMOLOS_VGA_H
 #define INCLUDE_SMOLOS_VGA_H
 
-#include <stdint.h>
+#include "sos_stdint.h"
 #include "sos_stddef.h"
 
 #define WIDTH 80
