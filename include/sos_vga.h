@@ -26,7 +26,8 @@ enum colors_vga {
     VGA_LRED = 12,
     VGA_LMAGENTA = 13,
     VGA_LBRWN = 14,
-    VGA_WHITE = 15
+    VGA_WHITE = 15,
+    VGA_YELLOW = 14
 };
 
 
@@ -72,6 +73,8 @@ void vga_restore_cursor(int x, int y);
 void vga_print_centered(char* str, int row);
 void vga_print_binary(uint32_t num);
 void vga_invert_colors(int x, int y, int width, int height);
+
+
 
 
 #endif // INCLUDE_SMOLOS_VGA_H

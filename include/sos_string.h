@@ -10,4 +10,14 @@ int strcmp(char* str1, char* str2);
 int strncmp(char* str1, char* str2, size_t num);
 char* strcat(char* destination, char* source);
 
+char* strchr(char* str, int c);
+char* strrchr(char* str, int c);
+char* strstr(char* haystack, char* needle);
+void strrev(char* str);
+void strtoupper(char* str);
+void strtolower(char* str);
+int strstartswith(char* str, char* prefix);
+int strendswith(char* str, char* suffix);
+void strtrim(char* str);
+
 #endif //INCLUDE_SMOLOS_STRING_H

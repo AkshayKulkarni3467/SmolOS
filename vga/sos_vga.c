@@ -361,6 +361,8 @@ void vga_invert_colors(int x, int y, int width, int height) {
     }
 }
 
+
+
 #ifdef SMOLOS_VGA_TEST
 
 void test_vga_color_startup() {
@@ -418,7 +420,6 @@ void test_vga_colors() {
 void test_vga_print_int() {
     printf("Testing vga_print_int...\n");
     
-    // Just verify it doesn't crash - visual inspection needed in real OS
     printf("  Testing with 0, 42, -100, 12345\n");
     printf("[T] Integer printing functions compiled successfully\n");
 }
@@ -426,7 +427,6 @@ void test_vga_print_int() {
 void test_vga_print_hex() {
     printf("Testing vga_print_hex...\n");
     
-    // Just verify it doesn't crash
     printf("  Testing with 0x0, 0xFF, 0x1234ABCD\n");
     printf("[T] Hex printing functions compiled successfully\n");
 }

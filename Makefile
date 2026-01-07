@@ -11,7 +11,7 @@ SmolOS.bin: $(OBJS)
 bootloader/sos_boot.o: bootloader/sos_boot.s
 	$(CC) $(CFLAGS) -c bootloader/sos_boot.s -o bootloader/sos_boot.o
 
-kernel/sos_kernel.o: kernel/sos_kernel.c
+kernel/sos_kernel.o: kernel/sos_kernel.c include/sos_vga.h
 	$(CC) $(CFLAGS) -c kernel/sos_kernel.c -o kernel/sos_kernel.o
 
 drivers/sos_string.o: include/sos_string.h drivers/sos_string.c
@@ -20,23 +20,31 @@ drivers/sos_string.o: include/sos_string.h drivers/sos_string.c
 drivers/sos_memory.o: include/sos_memory.h drivers/sos_memory.c
 	$(CC) $(CFLAGS) -c drivers/sos_memory.c -o drivers/sos_memory.o
 
-drivers/sos_studio.o: include/sos_studio.h drivers/sos_studio.c
-	$(CC) $(CFLAGS) -c drivers/sos_studio.c -o drivers/sos_studio.o
+drivers/sos_stdio.o: include/sos_stdio.h drivers/sos_stdio.c
+	$(CC) $(CFLAGS) -c drivers/sos_stdio.c -o drivers/sos_stdio.o
 
-vga/sos_vga.o : include/sos_vga.h vga/sos_vga.c
+vga/sos_vga.o: include/sos_vga.h vga/sos_vga.c
 	$(CC) $(CFLAGS) -c vga/sos_vga.c -o vga/sos_vga.o
 
 vga-test: include/sos_vga.h vga/sos_vga.c
 	gcc vga/sos_vga.c -fno-builtin -DSMOLOS_VGA_TEST -o vga-test -Iinclude
+	./vga-test
 
 string-test: drivers/sos_string.c include/sos_string.h
 	gcc drivers/sos_string.c -fno-builtin -DSMOLOS_STRING_TEST -o string-test -Iinclude
+	./string-test
 
 memory-test: drivers/sos_memory.c include/sos_memory.h
 	gcc drivers/sos_memory.c -fno-builtin -DSMOLOS_MEMORY_TEST -o memory-test -Iinclude
+	./memory-test
 
-kernel-test: kernel/sos_kernel.c vga/sos_vga.o
+kernel-test: kernel/sos_kernel.c include/sos_vga.h vga/sos_vga.o
 	gcc kernel/sos_kernel.c -fno-builtin -DSMOLOS_KERNEL_TEST -o kernel-test vga/sos_vga.o -Iinclude -m32
+	./kernel-test
+
+test-all: vga-test string-test memory-test kernel-test
+	@echo ""
+	@echo "=== All Tests Completed ==="
 
 clean:
 	rm -f bootloader/*.o kernel/*.o vga/*.o drivers/*.o SmolOS.bin 
@@ -45,4 +53,4 @@ clean:
 run: SmolOS.bin
 	qemu-system-i386 -kernel SmolOS.bin
 
-.PHONY: all clean run
+.PHONY: all clean run test-all vga-test string-test memory-test kernel-test
