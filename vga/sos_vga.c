@@ -1,5 +1,11 @@
 #include "sos_vga.h"
 
+#ifdef SMOLOS_VGA_TEST
+
+#include "sos_stdio.h"
+
+#endif
+
 
 uint16_t* const VGA_MEM = (uint16_t*) 0xB8000;
 
@@ -251,3 +257,11 @@ void vga_print_hex(uint32_t num) {
     }
 }
 
+#ifdef SMOLOS_VGA_TEST
+
+int main(void){
+    printf("Hello from VGA!\n");
+    return 0;
+}
+
+#endif

@@ -17,8 +17,12 @@ kernel/sos_kernel.o: kernel/sos_kernel.c
 vga/sos_vga.o : vga/sos_vga.h vga/sos_vga.c
 	$(CC) $(CFLAGS) -c vga/sos_vga.c -o vga/sos_vga.o
 
+vga-test: vga/sos_vga.h vga/sos_vga.c
+	gcc vga/sos_vga.c -fno-builtin -DSMOLOS_VGA_TEST -o vga-test -Idrivers
+
 clean:
 	rm -f bootloader/*.o kernel/*.o vga/*.o SmolOS.bin
+	rm -f vga-test
 
 run: SmolOS.bin
 	qemu-system-i386 -kernel SmolOS.bin
