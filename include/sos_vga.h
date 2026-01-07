@@ -63,5 +63,15 @@ void vga_backspace(void);
 void vga_print_int(int num);
 void vga_print_hex(uint32_t num);
 
+void vga_clear_line(size_t line);
+void vga_draw_box(int x, int y, int width, int height, uint8_t fg, uint8_t bg);
+void vga_fill_rect(int x, int y, int width, int height, char c, uint8_t fg, uint8_t bg);
+void vga_get_cursor_pos(int* x, int* y);
+void vga_save_cursor(int* x, int* y);
+void vga_restore_cursor(int x, int y);
+void vga_print_centered(char* str, int row);
+void vga_print_binary(uint32_t num);
+void vga_invert_colors(int x, int y, int width, int height);
+
 
 #endif // INCLUDE_SMOLOS_VGA_H

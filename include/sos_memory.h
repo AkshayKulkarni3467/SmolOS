@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SMOLOS_MEMORY_H
 #define INCLUDE_SMOLOS_MEMORY_H
 
-#include <stddef.h>
+#include "sos_stddef.h"
 
 void* memset(void* ptr, int value, size_t num);
 void* memcpy(void* destination, const void* source, size_t num);

@@ -1,5 +1,12 @@
 #include "sos_memory.h"
 
+#ifdef SMOLOS_MEMORY_TEST
+
+#include "sos_stdio.h"
+
+#endif
+
+
 void* memset(void* ptr, int value, size_t num) {
     unsigned char* p = (unsigned char*)ptr;
     for (size_t i = 0; i < num; i++) {
@@ -44,3 +51,12 @@ int memcmp(const void* ptr1, const void* ptr2, size_t num) {
     }
     return 0;
 }
+
+#ifdef SMOLOS_MEMORY_TEST
+
+int main(void){
+    printf("Hello from memory.c\n");
+    return 0;
+}
+
+#endif
