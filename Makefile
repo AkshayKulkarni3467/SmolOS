@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Ivga
+CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Ivga -Idrivers
 
 OBJS = bootloader/sos_boot.o kernel/sos_kernel.o vga/sos_vga.o
 
