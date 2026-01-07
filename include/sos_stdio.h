@@ -3,16 +3,16 @@
 
 #include "sos_stddef.h"
 
-int puts(const char* str);
-int printf(const char* format, ...);
-int sprintf(char* str, const char* format, ...);
-int snprintf(char* str, size_t size, const char* format, ...);
+int puts(char* str);
+int printf(char* format, ...);
+int sprintf(char* str, char* format, ...);
+int snprintf(char* str, size_t size, char* format, ...);
 
 typedef struct FILE FILE;
-FILE* fopen(const char* filename, const char* mode);
+FILE* fopen(char* filename, char* mode);
 int fclose(FILE* stream);
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
-size_t fwrite(const void* ptr, size_t size, size_t count, FILE* stream);
+size_t fwrite(void* ptr, size_t size, size_t count, FILE* stream);
 int fseek(FILE* stream, long offset, int whence);
 long ftell(FILE* stream);
 

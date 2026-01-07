@@ -10,7 +10,7 @@
     .long FLAGS
     .long CHECKSUM
 
-
+.section .note.GNU-stack
 
 .section .bss
 .align 16
@@ -24,6 +24,7 @@ _start:
     mov $stack_top, %esp  
     call kernel_main      
     cli
+
 
 hang:
     hlt
