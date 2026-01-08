@@ -1,4 +1,5 @@
 #include "sos_vga.h"
+#include "sos_io.h"
 
 #ifdef SMOLOS_VGA_TEST
 #include "sos_stdio.h"
@@ -11,10 +12,6 @@ uint8_t vga_color_startup(enum colors_vga fg, enum colors_vga bg) {
 
 uint16_t vga_startup(unsigned char uc, uint8_t color) {
     return (uint16_t) uc | (uint16_t) color << 8;
-}
-
-void outb(uint16_t port, uint8_t value) {
-    asm volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
 void vga_init(void) {

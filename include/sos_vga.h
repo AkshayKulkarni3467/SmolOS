@@ -43,7 +43,6 @@ void vga_clear(void);
 
 uint8_t vga_color_startup(enum colors_vga fg, enum colors_vga bg);
 uint16_t vga_startup(unsigned char uc, uint8_t color);
-void outb(uint16_t port, uint8_t value);
 
 
 void vga_setcursor(int x, int y);

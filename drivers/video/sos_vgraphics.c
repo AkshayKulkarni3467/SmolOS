@@ -1,5 +1,11 @@
 #include "sos_vga.h"
 
+#ifdef SMOLOS_VGRAPHICS_TEST
+#include "sos_stdio.h"
+#include <assert.h>
+#endif
+
+
 void vga_draw_line_horizontal(int x, int y, int length, char c, uint8_t fg, uint8_t bg) {
     uint8_t old_color = vga_t_color;
     vga_set_color(fg, bg);
@@ -454,3 +460,12 @@ void vga_print_highlighted(char* text, int x, int y, uint8_t fg, uint8_t bg) {
     
     vga_t_color = old_color;
 }
+
+#ifdef SMOLOS_VGRAPHICS_TEST
+
+int main(void) {    
+    printf("Hello from VGA Graphics!\n");
+    return 0;
+}
+
+#endif
