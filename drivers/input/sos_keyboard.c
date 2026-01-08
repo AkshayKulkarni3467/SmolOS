@@ -313,7 +313,6 @@ char get_char(void) {
 char wait_for_char(void) {
     while (!has_key()) {
         keyboard_poll();
-        __asm__ volatile("hlt");
     }
     return get_char();
 }
