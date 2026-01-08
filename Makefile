@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Iinclude
 
-OBJS = bootloader/sos_boot.o kernel/sos_kernel.o vga/sos_vga.o drivers/sos_string.o drivers/sos_memory.o drivers/sos_stdio.o
+OBJS = bootloader/sos_boot.o kernel/sos_kernel.o vga/sos_vga.o vga/sos_vgraphics.o drivers/sos_string.o drivers/sos_memory.o drivers/sos_stdio.o
 
 all: SmolOS.bin
 
@@ -25,6 +25,9 @@ drivers/sos_stdio.o: include/sos_stdio.h drivers/sos_stdio.c
 
 vga/sos_vga.o: include/sos_vga.h vga/sos_vga.c
 	$(CC) $(CFLAGS) -c vga/sos_vga.c -o vga/sos_vga.o
+
+vga/sos_vgraphics.o: include/sos_vgraphics.h vga/sos_vgraphics.c
+	$(CC) $(CFLAGS) -c vga/sos_vgraphics.c -o vga/sos_vgraphics.o
 
 vga-test: include/sos_vga.h vga/sos_vga.c
 	gcc vga/sos_vga.c -fno-builtin -DSMOLOS_VGA_TEST -o vga-test -Iinclude

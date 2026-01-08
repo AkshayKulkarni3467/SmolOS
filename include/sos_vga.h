@@ -10,6 +10,13 @@
 #define VGA_CTRL_REG 0x3D4
 #define VGA_DATA_REG 0x3D5
 
+static const uint16_t* VGA_MEM = (uint16_t*) 0xB8000;
+
+static size_t vga_t_row;
+static size_t vga_t_column;
+static uint8_t vga_t_color;
+static uint16_t* vga_t_buf;
+
 enum colors_vga {
     VGA_BLCK = 0,
     VGA_BLUE = 1,

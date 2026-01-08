@@ -5,13 +5,6 @@
 #include <assert.h>
 #endif
 
-uint16_t* const VGA_MEM = (uint16_t*) 0xB8000;
-
-size_t vga_t_row;
-size_t vga_t_column;
-uint8_t vga_t_color;
-uint16_t* vga_t_buf;
-
 uint8_t vga_color_startup(enum colors_vga fg, enum colors_vga bg) {
     return fg | bg << 4;
 }
