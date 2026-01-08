@@ -1,5 +1,6 @@
 #include "sos_vga.h"
 #include "sos_vgraphics.h"
+#include "sos_keyboard.h"
 
 #ifdef SMOLOS_KERNEL_TEST
 #include "sos_stdio.h"
@@ -8,6 +9,7 @@
 
 void kernel_main(void) {
     vga_init();
+    keyboard_init();
     vga_clear();
     vga_gradient_horizontal(0, 0, 80, 25);
     

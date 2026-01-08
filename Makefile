@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Iinclude
 
-OBJS = bootloader/sos_boot.o kernel/sos_kernel.o vga/sos_vga.o vga/sos_vgraphics.o drivers/sos_string.o drivers/sos_memory.o drivers/sos_stdio.o
+OBJS = bootloader/sos_boot.o kernel/sos_kernel.o keyboard/sos_keyboard.o vga/sos_vga.o vga/sos_vgraphics.o drivers/sos_string.o drivers/sos_memory.o drivers/sos_stdio.o
 
 all: SmolOS.bin
 
@@ -22,6 +22,9 @@ drivers/sos_memory.o: include/sos_memory.h drivers/sos_memory.c
 
 drivers/sos_stdio.o: include/sos_stdio.h drivers/sos_stdio.c
 	$(CC) $(CFLAGS) -c drivers/sos_stdio.c -o drivers/sos_stdio.o
+
+keyboard/sos_keyboard.o: include/sos_keyboard.h keyboard/sos_keyboard.c
+	$(CC) $(CFLAGS) -c keyboard/sos_keyboard.c -o keyboard/sos_keyboard.o
 
 vga/sos_vga.o: include/sos_vga.h vga/sos_vga.c
 	$(CC) $(CFLAGS) -c vga/sos_vga.c -o vga/sos_vga.o
@@ -50,7 +53,7 @@ test-all: vga-test string-test memory-test kernel-test
 	@echo "=== All Tests Completed ==="
 
 clean:
-	rm -f bootloader/*.o kernel/*.o vga/*.o drivers/*.o SmolOS.bin 
+	rm -f bootloader/*.o kernel/*.o vga/*.o drivers/*.o keyboard/*.o SmolOS.bin 
 	rm -f *-test
 
 run: SmolOS.bin
