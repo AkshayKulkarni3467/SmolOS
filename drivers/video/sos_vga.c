@@ -1,10 +1,101 @@
 #include "sos_vga.h"
 #include "sos_io.h"
+#include "sos_memory.h"
 
 #ifdef SMOLOS_VGA_TEST
 #include "sos_stdio.h"
 #include <assert.h>
 #endif
+
+static uint16_t back_buffer[WIDTH * HEIGHT];
+static int double_buffering_enabled = 1;
+static int auto_swap = 1;
+
+static int dirty_x1 = WIDTH, dirty_y1 = HEIGHT;
+static int dirty_x2 = 0, dirty_y2 = 0;
+static int screen_dirty = 0;
+
+void vga_enable_double_buffer(int enable) {
+    double_buffering_enabled = enable;
+    
+    if (enable) {
+        memcpy(back_buffer, (void*)VGA_MEM, WIDTH * HEIGHT * sizeof(uint16_t));
+    }
+}
+
+int vga_is_double_buffered(void) {
+    return double_buffering_enabled;
+}
+
+void vga_set_auto_swap(int enable) {
+    auto_swap = enable;
+}
+
+void vga_mark_dirty(int x, int y) {
+    if (!screen_dirty) {
+        dirty_x1 = x;
+        dirty_y1 = y;
+        dirty_x2 = x;
+        dirty_y2 = y;
+        screen_dirty = 1;
+    } else {
+        if (x < dirty_x1) dirty_x1 = x;
+        if (y < dirty_y1) dirty_y1 = y;
+        if (x > dirty_x2) dirty_x2 = x;
+        if (y > dirty_y2) dirty_y2 = y;
+    }
+}
+
+void vga_mark_region_dirty(int x, int y, int width, int height) {
+    for (int row = y; row < y + height && row < HEIGHT; row++) {
+        for (int col = x; col < x + width && col < WIDTH; col++) {
+            vga_mark_dirty(col, row);
+        }
+    }
+}
+
+void vga_swap_buffers(void) {
+    if (!double_buffering_enabled) return;
+    
+    if (!screen_dirty) return;  
+    
+    if (dirty_x1 < 0) dirty_x1 = 0;
+    if (dirty_y1 < 0) dirty_y1 = 0;
+    if (dirty_x2 >= WIDTH) dirty_x2 = WIDTH - 1;
+    if (dirty_y2 >= HEIGHT) dirty_y2 = HEIGHT - 1;
+    
+    for (int y = dirty_y1; y <= dirty_y2; y++) {
+        int start_idx = y * WIDTH + dirty_x1;
+        int count = dirty_x2 - dirty_x1 + 1;
+        
+        memcpy((void*)(VGA_MEM + start_idx), 
+               (void*)(back_buffer + start_idx), 
+               count * sizeof(uint16_t));
+    }
+    
+    dirty_x1 = WIDTH;
+    dirty_y1 = HEIGHT;
+    dirty_x2 = 0;
+    dirty_y2 = 0;
+    screen_dirty = 0;
+}
+
+static inline uint16_t* get_active_buffer(void) {
+    return double_buffering_enabled ? back_buffer : VGA_MEM;
+}
+
+
+void vga_force_full_redraw(void) {
+    if (!double_buffering_enabled) return;
+    
+    memcpy((void*)VGA_MEM, back_buffer, WIDTH * HEIGHT * sizeof(uint16_t));
+    
+    dirty_x1 = WIDTH;
+    dirty_y1 = HEIGHT;
+    dirty_x2 = 0;
+    dirty_y2 = 0;
+    screen_dirty = 0;
+}
 
 uint8_t vga_color_startup(enum colors_vga fg, enum colors_vga bg) {
     return fg | bg << 4;
@@ -18,28 +109,44 @@ void vga_init(void) {
     vga_t_row = 0;
     vga_t_column = 0;
     vga_t_color = vga_color_startup(VGA_LGREY, VGA_BLCK);
-    vga_t_buf = VGA_MEM;
+    vga_t_buf = VGA_MEM;  
     
     for (size_t y = 0; y < HEIGHT; y++) {
         for (size_t x = 0; x < WIDTH; x++) {
             const size_t index = y * WIDTH + x;
-            vga_t_buf[index] = vga_startup(' ', vga_t_color);
+            VGA_MEM[index] = vga_startup(' ', vga_t_color);
         }
     }
+    
+    for (size_t i = 0; i < WIDTH * HEIGHT; i++) {
+        back_buffer[i] = vga_startup(' ', vga_t_color);
+    }
+    
+    double_buffering_enabled = 1;
+    auto_swap = 1;
+    screen_dirty = 0;
     
     vga_setcursor(0, 0);
 }
 
 void vga_clear(void) {
+    uint16_t* buffer = get_active_buffer();
+    
     for (size_t y = 0; y < HEIGHT; y++) {
         for (size_t x = 0; x < WIDTH; x++) {
             const size_t index = y * WIDTH + x;
-            vga_t_buf[index] = vga_startup(' ', vga_t_color);
+            buffer[index] = vga_startup(' ', vga_t_color);
         }
     }
+    
     vga_t_row = 0;
     vga_t_column = 0;
     vga_setcursor(vga_t_column, vga_t_row);
+    
+    if (double_buffering_enabled) {
+        vga_mark_region_dirty(0, 0, WIDTH, HEIGHT);
+        if (auto_swap) vga_swap_buffers();
+    }
 }
 
 void vga_setcursor(int x, int y) {
@@ -57,20 +164,27 @@ void vga_setcursor(int x, int y) {
 }
 
 void vga_scroll(void) {
+    uint16_t* buffer = get_active_buffer();
+    
     for (size_t y = 1; y < HEIGHT; y++) {
         for (size_t x = 0; x < WIDTH; x++) {
             const size_t from_index = y * WIDTH + x;
             const size_t to_index = (y - 1) * WIDTH + x;
-            vga_t_buf[to_index] = vga_t_buf[from_index];
+            buffer[to_index] = buffer[from_index];
         }
     }
     
     for (size_t x = 0; x < WIDTH; x++) {
         const size_t index = (HEIGHT - 1) * WIDTH + x;
-        vga_t_buf[index] = vga_startup(' ', vga_t_color);
+        buffer[index] = vga_startup(' ', vga_t_color);
     }
     
     vga_t_row = HEIGHT - 1;
+    
+    if (double_buffering_enabled) {
+        vga_mark_region_dirty(0, 0, WIDTH, HEIGHT);
+        if (auto_swap) vga_swap_buffers();
+    }
 }
 
 void vga_set_fg(uint8_t color) {
@@ -140,7 +254,13 @@ void vga_putchr_at(int x, int y, char c) {
     }
     
     const size_t index = y * WIDTH + x;
-    vga_t_buf[index] = vga_startup(c, vga_t_color);
+    uint16_t* buffer = get_active_buffer();
+    buffer[index] = vga_startup(c, vga_t_color);
+    
+    if (double_buffering_enabled) {
+        vga_mark_dirty(x, y);
+        if (auto_swap) vga_swap_buffers();
+    }
 }
 
 void vga_putchr_color(char c, uint8_t fg, uint8_t bg) {
@@ -274,13 +394,22 @@ void vga_fill_rect(int x, int y, int width, int height, char c, uint8_t fg, uint
     uint8_t old_color = vga_t_color;
     vga_set_color(fg, bg);
     
+    uint16_t* buffer = get_active_buffer();
+    uint16_t entry = vga_startup(c, vga_t_color);
+    
     for (int row = 0; row < height && (y + row) < HEIGHT; row++) {
         for (int col = 0; col < width && (x + col) < WIDTH; col++) {
-            vga_putchr_at(x + col, y + row, c);
+            size_t index = (y + row) * WIDTH + (x + col);
+            buffer[index] = entry;
         }
     }
     
     vga_t_color = old_color;
+    
+    if (double_buffering_enabled) {
+        vga_mark_region_dirty(x, y, width, height);
+        if (auto_swap) vga_swap_buffers();
+    }
 }
 
 void vga_get_cursor_pos(int* x, int* y) {
@@ -349,6 +478,41 @@ void vga_invert_colors(int x, int y, int width, int height) {
             vga_t_buf[index] = vga_startup(character, new_color);
         }
     }
+}
+
+void vga_begin_batch(void) {
+    auto_swap = 0;
+}
+
+void vga_end_batch(void) {
+    auto_swap = 1;
+    vga_swap_buffers();
+}
+
+void vga_clear_no_flicker(void) {
+    vga_begin_batch();
+    vga_clear();
+    vga_end_batch();
+}
+
+int vga_get_dirty_pixel_count(void) {
+    if (!screen_dirty) return 0;
+    
+    int width = dirty_x2 - dirty_x1 + 1;
+    int height = dirty_y2 - dirty_y1 + 1;
+    return width * height;
+}
+
+void vga_get_dirty_rect(int* x, int* y, int* width, int* height) {
+    if (!screen_dirty) {
+        *x = 0; *y = 0; *width = 0; *height = 0;
+        return;
+    }
+    
+    *x = dirty_x1;
+    *y = dirty_y1;
+    *width = dirty_x2 - dirty_x1 + 1;
+    *height = dirty_y2 - dirty_y1 + 1;
 }
 
 

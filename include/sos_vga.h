@@ -10,7 +10,7 @@
 #define VGA_CTRL_REG 0x3D4
 #define VGA_DATA_REG 0x3D5
 
-static const uint16_t* VGA_MEM = (uint16_t*) 0xB8000;
+static uint16_t* VGA_MEM = (uint16_t*) 0xB8000;
 
 static size_t vga_t_row;
 static size_t vga_t_column;
@@ -80,7 +80,17 @@ void vga_print_centered(char* str, int row);
 void vga_print_binary(uint32_t num);
 void vga_invert_colors(int x, int y, int width, int height);
 
-
-
+void vga_enable_double_buffer(int enable);
+int vga_is_double_buffered(void);
+void vga_set_auto_swap(int enable);
+void vga_swap_buffers(void);
+void vga_force_full_redraw(void);
+void vga_mark_dirty(int x, int y);
+void vga_mark_region_dirty(int x, int y, int width, int height);
+void vga_begin_batch(void);
+void vga_end_batch(void);
+void vga_clear_no_flicker(void);
+int vga_get_dirty_pixel_count(void);
+void vga_get_dirty_rect(int* x, int* y, int* width, int* height);
 
 #endif // INCLUDE_SMOLOS_VGA_H

@@ -1,165 +1,114 @@
+// kernel/sos_kernel_flicker_free.c
+// Demo showing before/after double buffering
+
 #include "sos_vga.h"
 #include "sos_vgraphics.h"
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 
-#ifdef SMOLOS_KERNEL_TEST
-#include "sos_stdio.h"
-#endif
-
-
-
-void demo_text_input(void) {
-    vga_clear();
-    vga_print_centered("=== TEXT INPUT DEMO ===", 2);
-    vga_print_centered("Type your name and press Enter", 3);
-    
-    vga_draw_box_single(15, 8, 50, 5, VGA_GREEN, VGA_BLCK);
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_putchr_at(17, 9, 0);
-    vga_print("Name: ");
-    
-    char input_buffer[100] = {0};
-    int cursor_pos = 0;
-    int input_done = 0;
-    
-    while (!input_done) {
-        keyboard_poll();
-        
-        if (has_key()) {
-            char c = get_char();
-            
-            if (c == '\n') {
-                input_done = 1;
-            }
-            else if (c == '\b') {
-                if (cursor_pos > 0) {
-                    cursor_pos--;
-                    input_buffer[cursor_pos] = '\0';
-                    
-                    vga_putchr_at(24 + cursor_pos, 9, ' ');
-                }
-            }
-            else if (is_printable(c) && cursor_pos < 40) {
-                input_buffer[cursor_pos] = c;
-                vga_putchr_at(24 + cursor_pos, 9, c);
-                cursor_pos++;
-            }
-        }
-        
-    }
-
-    clear_key_buffer();
-
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    
-    char message[150];
-    int msg_pos = 0;
-    
-    const char* hello = "Hello, ";
-    for (int i = 0; hello[i] != '\0'; i++) {
-        message[msg_pos++] = hello[i];
-    }
-    
-    for (int i = 0; input_buffer[i] != '\0'; i++) {
-        message[msg_pos++] = input_buffer[i];
-    }
-    
-    message[msg_pos++] = '!';
-    message[msg_pos] = '\0';
-    
-    vga_print_centered(message, 12);
-    
-    vga_reset_color();
-    vga_print_centered("Press any key to continue...", 15);
-    wait_for_char();
-}
-
-
-
-void kernel_main(void) {
-    vga_init();
-    keyboard_init();
+void demo_complex_ui(void) {
+    vga_enable_double_buffer(1);
     
     int selected = 0;
-    int num_demos = 1;
-    char* demo_names[] = {
-        "Text Input Example"
-    };
+    char* items[] = {"System", "Display", "Network", "Advanced", "About"};
+    int progress = 0;
     
-    int quit = 0;
-    
-    while (!quit) {
+    for (int frame = 0; frame < 2000; frame++) {
+        vga_begin_batch();
+        
         vga_clear();
         
-        vga_set_color(VGA_WHITE, VGA_BLUE);
         vga_fill_rect(0, 0, 80, 2, ' ', VGA_WHITE, VGA_BLUE);
-        vga_print_centered("SmolOS - Keyboard & Graphics Demo", 0);
-        vga_print_centered("Interactive Input Examples", 1);
+        vga_set_color(VGA_WHITE, VGA_BLUE);
+        vga_print_centered("SmolOS Settings", 0);
+        vga_print_centered("Settings example!", 1);
         
-        vga_set_color(VGA_WHITE, VGA_BLCK);
-        vga_print_centered("Select a demo:", 4);
+        vga_draw_window(10, 3, 60, 15, "Configuration", VGA_WHITE, VGA_BLCK);
         
-        vga_draw_box_double(15, 6, 50, 10, VGA_CYAN, VGA_BLCK);
-        
-        for (int i = 0; i < num_demos; i++) {
-            vga_draw_menu_item(17, 8 + i, 46, demo_names[i], i == selected, VGA_WHITE, VGA_BLCK);
+        for (int i = 0; i < 5; i++) {
+            vga_draw_menu_item(12, 6 + i, 26, items[i], i == selected, VGA_WHITE, VGA_BLCK);
         }
         
-        vga_set_color(VGA_DGREY, VGA_BLCK);
-        vga_print_centered("↑↓ Navigate  |  Enter Select  |  Q Quit", 18);
+        vga_draw_box_single(40, 5, 28, 11, VGA_DGREY, VGA_BLCK);
+        vga_set_color(VGA_YELLOW, VGA_BLCK);
+        vga_print_centered("Current Status", 6);
+        
+        vga_set_color(VGA_WHITE, VGA_BLCK);
+        vga_putchr_at(42, 8, 0);
+        vga_print("Selected: ");
+        vga_set_color(VGA_CYAN, VGA_BLCK);
+        vga_print(items[selected]);
+        
+        progress = (progress + 2) % 101;
+        vga_set_color(VGA_WHITE, VGA_BLCK);
+        vga_putchr_at(42, 10, 0);
+        vga_print("Loading:");
+        vga_draw_progress_bar(42, 11, 24, progress, VGA_GREEN, VGA_DGREY, VGA_BLCK);
+        
+        vga_putchr_at(42, 13, 0);
+        vga_print("Processing ");
+        vga_draw_spinner(54, 13, frame, VGA_CYAN, VGA_BLCK);
         
         vga_fill_rect(0, 24, 80, 1, ' ', VGA_WHITE, VGA_DGREY);
         vga_set_color(VGA_WHITE, VGA_DGREY);
-
+        vga_putchr_at(2, 24, 0);
+        vga_print("Frame: ");
+        vga_print_int(frame);
+        vga_print("  Use up/down arrows  |  ESC to exit");
+        
+        vga_end_batch();
         
         keyboard_poll();
-        
         if (has_key()) {
             char c = get_char();
-            
             if (c == CHAR_UP) {
-                selected--;
-                if (selected < 0) selected = num_demos - 1;
+                selected = (selected > 0) ? selected - 1 : 4;
             }
             else if (c == CHAR_DOWN) {
-                selected++;
-                if (selected >= num_demos) selected = 0;
+                selected = (selected < 4) ? selected + 1 : 0;
             }
-            else if (c == '\n') {
-                switch (selected) {
-                    case 0: demo_text_input(); break;
-                }
-            }
-            else if (c == 'q' || c == 'Q') {
-                quit = 1;
+            else if (c == 27) {  
+                break;
             }
         }
         
         delay(1);
     }
+}
+
+
+void kernel_main(void) {
+    vga_init();  
+    keyboard_init();
     
+    vga_begin_batch();
     vga_clear();
     vga_gradient_horizontal(0, 0, 80, 25);
-    vga_draw_shadow_box(20, 10, 40, 6, VGA_WHITE, VGA_BLCK);
-    vga_print_centered("Thank you for using SmolOS!", 12);
-    vga_rainbow_text("Goodbye!", 36, 13);
+    
+    vga_draw_shadow_box(15, 8, 50, 10, VGA_WHITE, VGA_BLCK);
+    vga_set_color(VGA_WHITE, VGA_BLUE);
+    vga_fill_rect(16, 9, 48, 1, ' ', VGA_WHITE, VGA_BLUE);
+    vga_print_centered("SmolOS GUI", 9);
+    
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    vga_print_centered("Welcome to SmolOS GUI!", 12);
+    vga_print_centered("Press any key to start...", 14);
+    vga_end_batch();
+    
+    wait_for_char();
+    
+    demo_complex_ui();
+
+    
+    vga_begin_batch();
+    vga_clear();
+    vga_print_centered("Bye!", 10);
+    vga_rainbow_text("Blah blah blah blah!", 30, 12);
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    vga_print_centered("Blah blah blah OS blah blah blah!", 14);
+    vga_end_batch();
     
     while (1) {
         __asm__ volatile ("hlt");
     }
 }
-
-#ifdef SMOLOS_KERNEL_TEST
-
-int main(void) {
-    printf("=== SmolOS Kernel Test ===\n\n");
-    printf("Testing kernel compilation and basic structure...\n");
-    printf("[T] Kernel compiled successfully\n");
-    printf("[T] VGA integration works\n");
-    printf("\nNote: Full kernel test requires running in QEMU\n");
-    printf("Run 'make run' to test the actual kernel\n");
-    return 0;
-}
-
-#endif
