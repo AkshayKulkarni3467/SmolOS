@@ -3,4 +3,4 @@
 
 void run_command(const char* cmd);
 
-#endif //INCLUDE_SMOLOS_CMDS_H
+#endif // INCLUDE_SMOLOS_CMDS_H
