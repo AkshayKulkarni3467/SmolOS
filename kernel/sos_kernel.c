@@ -8,7 +8,6 @@
 void kernel_main(void) {
     vga_init();  
     keyboard_init();
-    
     run_shell();
     
     while (1) {

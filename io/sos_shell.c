@@ -1,3 +1,4 @@
+
 #include "sos_shell.h"
 #include "sos_vga.h"
 #include "sos_vgraphics.h"
@@ -24,6 +25,8 @@ static int shell_running = 1;
 static char current_directory[64] = "/";
 static char username[32] = "user";
 
+int scroll_enabled = 1;
+
 void shell_init(void) {
     history_count = 0;
     history_index = 0;
@@ -31,6 +34,7 @@ void shell_init(void) {
     shell_running = 1;
     strcpy(current_directory, "/");
     strcpy(username, "user");
+    scroll_enabled = 1;
 }
 
 void shell_set_prompt_color(uint8_t color) {
@@ -62,7 +66,6 @@ void shell_set_username(const char* name) {
 void shell_add_to_history(const char* cmd) {
     if (cmd[0] == '\0') return;
     
-
     if (history_count > 0 && strcmp(command_history[history_count - 1], (char*)cmd) == 0) {
         return;
     }
@@ -98,8 +101,6 @@ void shell_prompt(void) {
 }
 
 void shell_display_startup(void) {
-    int x = 0;
-    int y = 0;
     vga_begin_batch();
     vga_clear();
     
@@ -108,7 +109,7 @@ void shell_display_startup(void) {
         vga_println((char*)startup_text[i]);
     }
     
-    vga_println("\n");
+    vga_println("");
     vga_set_color(VGA_YELLOW, VGA_BLCK);
     vga_print_centered("==============================================", 8);
     vga_set_color(VGA_WHITE, VGA_BLCK);
@@ -117,7 +118,6 @@ void shell_display_startup(void) {
     vga_print_centered("==============================================", 10);
     
     vga_set_color(VGA_LGREY, VGA_BLCK);
-    vga_get_cursor_pos(&x,&y);
     vga_println("\n");
     vga_println("Type 'help' for a list of commands.");
     vga_println("Type 'about' for system information.");
@@ -127,14 +127,16 @@ void shell_display_startup(void) {
 }
 
 void shell_clear_input_line(void) {
+    int prompt_len = strlen(username) + strlen(current_directory) + 11; 
+    
     for (int i = 0; i < cursor_pos; i++) {
+        vga_putchr('\b');
+        vga_putchr(' ');
         vga_putchr('\b');
     }
 }
 
 void shell_redraw_input(void) {
-    shell_clear_input_line();
-    
     vga_set_color(input_color, VGA_BLCK);
     for (int i = 0; i < cursor_pos; i++) {
         vga_putchr(current_input[i]);
@@ -179,8 +181,8 @@ void shell_handle_history_down(void) {
 
 void shell_autocomplete(void) {
     const char* commands[] = {
-        "help", "clear", "about", "echo", "calc", "time", "date",
-        "uptime", "color", "username", "history", "exit",
+        "help", "clear", "about", "echo", "calc", "time",
+        "uptime", "color", "username", "history","exit", 
         "sysinfo", "version", "banner", "test"
     };
     int num_commands = 16;
@@ -214,8 +216,24 @@ void shell_autocomplete(void) {
             }
         }
         
+        shell_check_scroll();
+        
         shell_prompt();
         shell_redraw_input();
+    }
+}
+
+void shell_check_scroll(void) {
+    if (!scroll_enabled) return;
+    
+    int current_row, current_col;
+    vga_get_cursor_pos(&current_col, &current_row);
+    
+    if (current_row >= HEIGHT - 1) {
+        vga_scroll();
+        vga_t_row = HEIGHT - 2;
+        vga_t_column = 0;
+        vga_setcursor(0, HEIGHT - 2);
     }
 }
 
@@ -245,10 +263,14 @@ void run_shell(void) {
                 current_input[cursor_pos] = '\0';
                 vga_putchr('\n');
                 
+                shell_check_scroll();
+                
                 if (cursor_pos > 0) {
                     shell_add_to_history(current_input);
                     run_command(current_input);
                 }
+                
+                shell_check_scroll();
                 
                 shell_prompt();
                 cursor_pos = 0;
@@ -258,7 +280,7 @@ void run_shell(void) {
                 if (cursor_pos > 0) {
                     cursor_pos--;
                     current_input[cursor_pos] = '\0';
-                    vga_putchr('\b');
+                    vga_backspace();
                 }
             }
             else if (c == '\t') {
@@ -271,7 +293,7 @@ void run_shell(void) {
                 shell_handle_history_down();
             }
             else if (c == CHAR_LEFT || c == CHAR_RIGHT) {
-                //TODO Implement cursor movement?
+                //TODO Implement cursor movement
             }
             else if (c == CHAR_HOME) {
                 shell_clear_input_line();
@@ -284,16 +306,17 @@ void run_shell(void) {
                     vga_putchr(c);
                 }
             }
-            else if (c == 3) {  
+            else if (c == 3) {
                 vga_putchr('\n');
                 vga_set_color(VGA_YELLOW, VGA_BLCK);
                 vga_println("^C");
                 vga_set_color(input_color, VGA_BLCK);
+                shell_check_scroll();
                 shell_prompt();
                 cursor_pos = 0;
                 current_input[0] = '\0';
             }
-            else if (c == 12) { 
+            else if (c == 12) {
                 vga_clear();
                 shell_prompt();
                 shell_redraw_input();
@@ -317,28 +340,34 @@ void shell_print_error(const char* msg) {
     vga_print("Error: ");
     vga_println((char*)msg);
     vga_set_color(input_color, VGA_BLCK);
+    shell_check_scroll();
 }
 
 void shell_print_success(const char* msg) {
     vga_set_color(success_color, VGA_BLCK);
     vga_println((char*)msg);
     vga_set_color(input_color, VGA_BLCK);
+    shell_check_scroll();
 }
 
 void shell_print_info(const char* msg) {
     vga_set_color(VGA_YELLOW, VGA_BLCK);
     vga_println((char*)msg);
     vga_set_color(input_color, VGA_BLCK);
+    shell_check_scroll();
 }
 
 void shell_show_history(void) {
     if (history_count == 0) {
         vga_println("No command history.");
+        shell_check_scroll();
         return;
     }
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
     vga_println("Command History:");
+    shell_check_scroll();
+    
     vga_set_color(VGA_WHITE, VGA_BLCK);
     
     for (int i = 0; i < history_count; i++) {
@@ -346,6 +375,7 @@ void shell_show_history(void) {
         vga_print_int(i + 1);
         vga_print("  ");
         vga_println(command_history[i]);
+        shell_check_scroll();
     }
 }
 
