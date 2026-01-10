@@ -6,6 +6,7 @@
 #include "sos_memory.h"
 #include "sos_fat16.h"
 #include "sos_filemanager.h"
+#include "sos_ata.h"
 
 #define MAX_ARGS 10
 
@@ -41,6 +42,74 @@ static CommandArgs parse_command(char* cmd) {
 static void print_with_scroll(const char* text) {
     vga_println((char*)text);
     shell_check_scroll();
+}
+
+void cmd_hdinfo(CommandArgs args) {
+    ata_init();
+    
+    if (!ata_is_available()) {
+        shell_print_error("No ATA disk detected!");
+        vga_set_color(VGA_DGREY, VGA_BLCK);
+        print_with_scroll("The system is using RAM-based virtual disk.");
+        print_with_scroll("To use a real disk, ensure QEMU has a disk image attached:");
+        print_with_scroll("  qemu-system-i386 -kernel SmolOS.bin -hda disk.img");
+        vga_set_color(VGA_WHITE, VGA_BLCK);
+        return;
+    }
+    
+    ATA_IdentifyInfo info;
+    if (ata_identify(&info) != 0) {
+        shell_print_error("Failed to identify disk!");
+        return;
+    }
+    
+    vga_set_color(VGA_LCYAN, VGA_BLCK);
+    print_with_scroll("=== ATA Hard Disk Information ===");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll("");
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Model:         ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll(info.model);
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Serial:        ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll(info.serial);
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Total Sectors: ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    vga_print_int(info.lba28_sectors);
+    vga_println("");
+    shell_check_scroll();
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Capacity:      ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    
+    uint32_t size_mb = (info.lba28_sectors / 2048);  
+    vga_print_int(size_mb);
+    vga_println(" MB");
+    shell_check_scroll();
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("LBA Support:   ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll(info.supports_lba ? "Yes" : "No");
+    
+    print_with_scroll("");
+    
+    if (fat16_using_real_disk()) {
+        vga_set_color(VGA_LGREEN, VGA_BLCK);
+        print_with_scroll("[S] FAT16 filesystem is stored on this disk");
+        vga_set_color(VGA_WHITE, VGA_BLCK);
+    } else {
+        vga_set_color(VGA_YELLOW, VGA_BLCK);
+        print_with_scroll("[F] FAT16 filesystem is in RAM (not persistent)");
+        vga_set_color(VGA_WHITE, VGA_BLCK);
+    }
 }
 
 void cmd_files(CommandArgs args) {
@@ -178,7 +247,7 @@ void cmd_rm(CommandArgs args) {
     }
 }
 
-void cmd_diskinfo(CommandArgs args) {
+void cmd_diskinfo_enhanced(CommandArgs args) {
     fat16_init();
     
     uint32_t total = fat16_get_total_space();
@@ -186,26 +255,65 @@ void cmd_diskinfo(CommandArgs args) {
     uint32_t used = total - free;
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== Disk Information ===");
+    print_with_scroll("=== File System Information ===");
+    print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Total: ");
+    vga_print("Type:        ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll("FAT16");
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Storage:     ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll(fat16_using_real_disk() ? "ATA Hard Disk" : "RAM (Virtual)");
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Total Space: ");
     vga_set_color(VGA_WHITE, VGA_BLCK);
     char size_str[32];
     format_size(total, size_str);
     print_with_scroll(size_str);
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Used:  ");
+    vga_print("Used Space:  ");
     vga_set_color(VGA_WHITE, VGA_BLCK);
     format_size(used, size_str);
     print_with_scroll(size_str);
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Free:  ");
+    vga_print("Free Space:  ");
     vga_set_color(VGA_LGREEN, VGA_BLCK);
     format_size(free, size_str);
     print_with_scroll(size_str);
+    
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    print_with_scroll("");
+    
+    int percent = (used * 100) / total;
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Usage:       ");
+    vga_set_color(percent > 80 ? VGA_RED : VGA_WHITE, VGA_BLCK);
+    vga_print_int(percent);
+    vga_println("%");
+    shell_check_scroll();
+    
+    vga_set_color(VGA_DGREY, VGA_BLCK);
+    vga_print("             [");
+    int bar_width = 40;
+    int filled = (bar_width * percent) / 100;
+    for (int i = 0; i < bar_width; i++) {
+        if (i < filled) {
+            vga_set_color(VGA_LGREEN, VGA_BLCK);
+            vga_putchr('#');
+        } else {
+            vga_set_color(VGA_DGREY, VGA_BLCK);
+            vga_putchr('-');
+        }
+    }
+    vga_set_color(VGA_DGREY, VGA_BLCK);
+    vga_println("]");
+    shell_check_scroll();
     
     vga_set_color(VGA_WHITE, VGA_BLCK);
 }
@@ -741,8 +849,11 @@ void run_command(const char* cmd_str) {
     else if (strcmp(cmd, "rm") == 0) {
         cmd_rm(args);
     }
-    else if (strcmp(cmd, "diskinfo") == 0 || strcmp(cmd, "df") == 0) {
-        cmd_diskinfo(args);
+    else if (strcmp(cmd, "hdinfo") == 0 || strcmp(cmd, "disk") == 0) {
+        cmd_hdinfo(args);
+    }
+    else if (strcmp(cmd, "diskinfo") == 0){
+        cmd_diskinfo_enhanced(args);
     }
     else {
         vga_set_color(VGA_LRED, VGA_BLCK);

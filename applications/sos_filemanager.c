@@ -88,6 +88,8 @@ void format_size(uint32_t size, char* output) {
     }
 }
 
+//TODO Debug text editor
+
 void text_editor(const char* filename) {
     memset(&editor, 0, sizeof(EditorState));
     strcpy(editor.filename, (char*)filename);

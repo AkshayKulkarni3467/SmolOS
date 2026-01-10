@@ -1,7 +1,10 @@
 CC = gcc
 CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Iinclude
 
-OBJS = bootloader/sos_boot.o kernel/sos_kernel.o applications/sos_filemanager.o drivers/fat/sos_fat16.o drivers/timer/sos_pit.o io/sos_io.o io/sos_shell.o commands/sos_cmds.o drivers/input/sos_keyboard.o drivers/video/sos_vga.o drivers/video/sos_vgraphics.o libraries/sos_string.o libraries/sos_memory.o libraries/sos_stdio.o
+DISK_IMG = disk.img
+DISK_IMG_SIZE = 10
+
+OBJS = bootloader/sos_boot.o kernel/sos_kernel.o applications/sos_filemanager.o drivers/ata/sos_ata.o drivers/fat/sos_fat16.o drivers/timer/sos_pit.o io/sos_io.o io/sos_shell.o commands/sos_cmds.o drivers/input/sos_keyboard.o drivers/video/sos_vga.o drivers/video/sos_vgraphics.o libraries/sos_string.o libraries/sos_memory.o libraries/sos_stdio.o
 
 all: SmolOS.bin
 
@@ -50,6 +53,8 @@ drivers/video/sos_vgraphics.o: include/sos_vgraphics.h drivers/video/sos_vgraphi
 drivers/fat/sos_fat16.o : include/sos_fat16.h drivers/fat/sos_fat16.c
 	$(CC) $(CFLAGS) -c drivers/fat/sos_fat16.c -o drivers/fat/sos_fat16.o
 
+drivers/ata/sos_ata.o : include/sos_ata.h drivers/ata/sos_ata.c 
+	$(CC) $(CFLAGS) -c drivers/ata/sos_ata.c -o drivers/ata/sos_ata.o
 vga-test: include/sos_vga.h drivers/video/sos_vga.c
 	gcc drivers/video/sos_vga.c -fno-builtin -DSMOLOS_VGA_TEST -o vga-test -Iinclude
 	./vga-test
@@ -76,11 +81,20 @@ test-all: vga-test vgraphics-test string-test memory-test keyboard-test kernel-t
 	@echo ""
 	@echo "=== All Tests Completed ==="
 
+create-img: 
+	qemu-img create -f raw disk.img 10M
+
+hexdump-img:
+	hexdump -C disk.img 
 clean:
 	rm -f applications/*.o commands/*.o bootloader/*.o kernel/*.o drivers/*/*.o libraries/*.o io/*.o SmolOS.bin 
 	rm -f *-test
 
 run: SmolOS.bin
-	qemu-system-i386 -kernel SmolOS.bin
+	@if [ ! -f $(DISK_IMG) ]; then \
+		echo "$(DISK_IMG) not found. Creating FAT16 disk..."; \
+		qemu-img create -f raw $(DISK_IMG) $(DISK_IMG_SIZE)M; \
+	fi
+	qemu-system-i386 -kernel SmolOS.bin -drive file=disk.img,format=raw,if=ide,index=0
 
 .PHONY: all clean run test-all vga-test string-test memory-test kernel-test
