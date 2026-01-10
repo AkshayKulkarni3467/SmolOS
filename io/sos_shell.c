@@ -183,7 +183,7 @@ void shell_autocomplete(void) {
     const char* commands[] = {
         "help", "clear", "about", "echo", "calc", "time",
         "uptime", "color", "username", "history","exit", 
-        "sysinfo", "version", "banner", "test"
+        "sysinfo", "version", "banner", "test", "files"
     };
     int num_commands = 16;
     

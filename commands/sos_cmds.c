@@ -4,6 +4,8 @@
 #include "sos_vgraphics.h"
 #include "sos_string.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+#include "sos_filemanager.h"
 
 #define MAX_ARGS 10
 
@@ -39,6 +41,173 @@ static CommandArgs parse_command(char* cmd) {
 static void print_with_scroll(const char* text) {
     vga_println((char*)text);
     shell_check_scroll();
+}
+
+void cmd_files(CommandArgs args) {
+    file_manager_command();
+}
+
+void cmd_ls(CommandArgs args) {
+    fat16_init();
+    
+    FAT16_FileInfo files[50];
+    int count = fat16_list_files(files, 50);
+    
+    if (count == 0) {
+        print_with_scroll("No files found.");
+        return;
+    }
+    
+    vga_set_color(VGA_LCYAN, VGA_BLCK);
+    print_with_scroll("Files:");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    
+    for (int i = 0; i < count; i++) {
+        vga_print("  ");
+        vga_print(files[i].name);
+        
+        int name_len = strlen(files[i].name);
+        for (int j = name_len; j < 20; j++) vga_putchr(' ');
+        
+        char size_str[32];
+        format_size(files[i].size, size_str);
+        vga_println(size_str);
+        shell_check_scroll();
+    }
+    
+    vga_println("");
+    shell_check_scroll();
+}
+
+void cmd_cat(CommandArgs args) {
+    if (args.argc < 2) {
+        shell_print_error("Usage: cat <filename>");
+        return;
+    }
+    
+    fat16_init();
+    
+    char* filename = args.args[1];
+    
+    if (!fat16_file_exists(filename)) {
+        shell_print_error("File not found!");
+        return;
+    }
+    
+    uint32_t size;
+    char* content = fat16_read_file(filename, &size);
+    
+    if (!content) {
+        shell_print_error("Error reading file!");
+        return;
+    }
+    
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    
+    for (uint32_t i = 0; i < size; i++) {
+        vga_putchr(content[i]);
+        if (content[i] == '\n') {
+            shell_check_scroll();
+        }
+    }
+    
+    if (size > 0 && content[size - 1] != '\n') {
+        vga_println("");
+    }
+    
+    shell_check_scroll();
+}
+
+void cmd_touch(CommandArgs args) {
+    if (args.argc < 2) {
+        shell_print_error("Usage: touch <filename>");
+        return;
+    }
+    
+    fat16_init();
+    
+    char* filename = args.args[1];
+    
+    if (fat16_file_exists(filename)) {
+        shell_print_info("File already exists.");
+        return;
+    }
+    
+    int result = fat16_create_file(filename, "", 0);
+    if (result == 0) {
+        shell_print_success("File created!");
+    } else {
+        shell_print_error("Error creating file!");
+    }
+}
+
+void cmd_rm(CommandArgs args) {
+    if (args.argc < 2) {
+        shell_print_error("Usage: rm <filename>");
+        return;
+    }
+    
+    fat16_init();
+    
+    char* filename = args.args[1];
+    
+    if (!fat16_file_exists(filename)) {
+        shell_print_error("File not found!");
+        return;
+    }
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Delete '");
+    vga_print(filename);
+    vga_print("'? (y/n): ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    
+    char confirm = wait_for_char();
+    vga_putchr(confirm);
+    vga_println("");
+    shell_check_scroll();
+    
+    if (confirm == 'y' || confirm == 'Y') {
+        if (fat16_delete_file(filename) == 0) {
+            shell_print_success("File deleted.");
+        } else {
+            shell_print_error("Error deleting file.");
+        }
+    } else {
+        shell_print_info("Deletion cancelled.");
+    }
+}
+
+void cmd_diskinfo(CommandArgs args) {
+    fat16_init();
+    
+    uint32_t total = fat16_get_total_space();
+    uint32_t free = fat16_get_free_space();
+    uint32_t used = total - free;
+    
+    vga_set_color(VGA_LCYAN, VGA_BLCK);
+    print_with_scroll("=== Disk Information ===");
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Total: ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    char size_str[32];
+    format_size(total, size_str);
+    print_with_scroll(size_str);
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Used:  ");
+    vga_set_color(VGA_WHITE, VGA_BLCK);
+    format_size(used, size_str);
+    print_with_scroll(size_str);
+    
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    vga_print("Free:  ");
+    vga_set_color(VGA_LGREEN, VGA_BLCK);
+    format_size(free, size_str);
+    print_with_scroll(size_str);
+    
+    vga_set_color(VGA_WHITE, VGA_BLCK);
 }
 
 void cmd_help_sys(CommandArgs args){
@@ -77,6 +246,17 @@ void cmd_help_utils(CommandArgs args){
     print_with_scroll("  time           - Show current time (simulated)");
     print_with_scroll("  uptime         - Show system uptime");
     print_with_scroll("  test           - Run graphics test");
+    vga_set_color(VGA_LGREY, VGA_BLCK);
+}
+
+void cmd_help_files(CommandArgs args){
+    vga_set_color(VGA_LGREY, VGA_BLCK);
+    print_with_scroll("  files / fm         - Open file manager");
+    print_with_scroll("  ls / dir           - List files");
+    print_with_scroll("  cat <file>         - Display file contents");
+    print_with_scroll("  touch <file>       - Create empty file");
+    print_with_scroll("  rm <file>          - Delete file");
+    print_with_scroll("  diskinfo / df      - Show disk space");
     vga_set_color(VGA_LGREY, VGA_BLCK);
 }
 
@@ -123,7 +303,16 @@ void cmd_help(CommandArgs args) {
     print_with_scroll("  test           - Run graphics test");
     print_with_scroll("");
     
-    vga_set_color(VGA_WHITE, VGA_BLCK);
+    vga_set_color(VGA_YELLOW, VGA_BLCK);
+    print_with_scroll("File Commands:");
+    vga_set_color(VGA_LGREY, VGA_BLCK);
+    print_with_scroll("  files / fm         - Open file manager");
+    print_with_scroll("  ls / dir           - List files");
+    print_with_scroll("  cat <file>         - Display file contents");
+    print_with_scroll("  touch <file>       - Create empty file");
+    print_with_scroll("  rm <file>          - Delete file");
+    print_with_scroll("  diskinfo / df      - Show disk space");
+    print_with_scroll("");
 }
 
 void cmd_about(CommandArgs args) {
@@ -483,6 +672,9 @@ void run_command(const char* cmd_str) {
     else if (strcmp(cmd, "help-utils") == 0) {
         cmd_help_utils(args);
     }
+    else if (strcmp(cmd ,"help-fm") == 0) {
+        cmd_help_files(args);
+    }
     else if (strcmp(cmd, "about") == 0) {
         cmd_about(args);
     }
@@ -530,6 +722,27 @@ void run_command(const char* cmd_str) {
     }
     else if (strcmp(cmd, "test") == 0) {
         cmd_test(args);
+    }
+    else if (strcmp(cmd, "files") == 0){
+        file_manager_command();
+    }
+    else if (strcmp(cmd, "files") == 0 || strcmp(cmd, "fm") == 0) {
+        cmd_files(args);
+    }
+    else if (strcmp(cmd, "ls") == 0 || strcmp(cmd, "dir") == 0) {
+        cmd_ls(args);
+    }
+    else if (strcmp(cmd, "cat") == 0) {
+        cmd_cat(args);
+    }
+    else if (strcmp(cmd, "touch") == 0) {
+        cmd_touch(args);
+    }
+    else if (strcmp(cmd, "rm") == 0) {
+        cmd_rm(args);
+    }
+    else if (strcmp(cmd, "diskinfo") == 0 || strcmp(cmd, "df") == 0) {
+        cmd_diskinfo(args);
     }
     else {
         vga_set_color(VGA_LRED, VGA_BLCK);

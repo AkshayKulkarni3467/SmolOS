@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -nostdlib -fno-builtin -fno-stack-protector -O2 -Wall -Wextra -m32 -Iinclude
 
-OBJS = bootloader/sos_boot.o kernel/sos_kernel.o drivers/timer/sos_pit.o io/sos_io.o io/sos_shell.o commands/sos_cmds.o drivers/input/sos_keyboard.o drivers/video/sos_vga.o drivers/video/sos_vgraphics.o libraries/sos_string.o libraries/sos_memory.o libraries/sos_stdio.o
+OBJS = bootloader/sos_boot.o kernel/sos_kernel.o applications/sos_filemanager.o drivers/fat/sos_fat16.o drivers/timer/sos_pit.o io/sos_io.o io/sos_shell.o commands/sos_cmds.o drivers/input/sos_keyboard.o drivers/video/sos_vga.o drivers/video/sos_vgraphics.o libraries/sos_string.o libraries/sos_memory.o libraries/sos_stdio.o
 
 all: SmolOS.bin
 
@@ -32,6 +32,9 @@ io/sos_shell.o: include/sos_shell.h io/sos_shell.c
 commands/sos_cmds.o: include/sos_cmds.h commands/sos_cmds.c
 	$(CC) $(CFLAGS) -c commands/sos_cmds.c -o commands/sos_cmds.o
 
+applications/sos_filemanager.o: include/sos_filemanager.h applications/sos_filemanager.c
+	$(CC) $(CFLAGS) -c applications/sos_filemanager.c -o applications/sos_filemanager.o
+
 drivers/input/sos_keyboard.o: include/sos_keyboard.h drivers/input/sos_keyboard.c
 	$(CC) $(CFLAGS) -c drivers/input/sos_keyboard.c -o drivers/input/sos_keyboard.o
 
@@ -43,6 +46,9 @@ drivers/video/sos_vga.o: include/sos_vga.h drivers/video/sos_vga.c
 
 drivers/video/sos_vgraphics.o: include/sos_vgraphics.h drivers/video/sos_vgraphics.c
 	$(CC) $(CFLAGS) -c drivers/video/sos_vgraphics.c -o drivers/video/sos_vgraphics.o
+
+drivers/fat/sos_fat16.o : include/sos_fat16.h drivers/fat/sos_fat16.c
+	$(CC) $(CFLAGS) -c drivers/fat/sos_fat16.c -o drivers/fat/sos_fat16.o
 
 vga-test: include/sos_vga.h drivers/video/sos_vga.c
 	gcc drivers/video/sos_vga.c -fno-builtin -DSMOLOS_VGA_TEST -o vga-test -Iinclude
@@ -71,7 +77,7 @@ test-all: vga-test vgraphics-test string-test memory-test keyboard-test kernel-t
 	@echo "=== All Tests Completed ==="
 
 clean:
-	rm -f commands/*.o bootloader/*.o kernel/*.o drivers/video/*.o drivers/*.o drivers/input/*.o drivers/timer/*.o io/*.o libraries/*.o SmolOS.bin 
+	rm -f applications/*.o commands/*.o bootloader/*.o kernel/*.o drivers/*/*.o libraries/*.o io/*.o SmolOS.bin 
 	rm -f *-test
 
 run: SmolOS.bin
