@@ -1,8 +1,9 @@
-# sos_idt.s - FIXED Interrupt stub handlers
+.section .note.GNU-stack
+
+
 .section .text
 .code32
 
-# Macro for ISRs without error code
 .macro ISR_NOERRCODE num
 .global isr\num
 .type isr\num, @function
@@ -13,13 +14,12 @@ isr\num:
     jmp isr_common_stub
 .endm
 
-# Macro for ISRs with error code
 .macro ISR_ERRCODE num
 .global isr\num
 .type isr\num, @function
 isr\num:
     cli
-    pushl $\num       # Push interrupt number (note: error code already on stack)
+    pushl $\num       # Push interrupt number 
     jmp isr_common_stub
 .endm
 
@@ -57,7 +57,6 @@ ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
-# Common ISR stub
 isr_common_stub:
     pusha              # Save all registers
     
@@ -67,19 +66,12 @@ isr_common_stub:
     movw %ax, %fs
     movw %ax, %gs
     
-    # FIXED: Stack layout after pusha:
-    # [eax][ecx][edx][ebx][esp][ebp][esi][edi] = 32 bytes
-    # [int_no][err_code] = 8 bytes (pushed before pusha)
-    # Total offset to int_no = 32 bytes
-    # Total offset to err_code = 36 bytes
-    
-    # Push arguments in CORRECT order for C: (err_code, int_no)
     movl 36(%esp), %eax   # err_code at esp+36
     pushl %eax
-    movl 36(%esp), %eax   # int_no at esp+36 (note: esp changed by previous push)
+    movl 36(%esp), %eax   
     pushl %eax
     
-    call isr_handler      # Call C handler with (int_no, err_code)
+    call isr_handler      
     
     addl $8, %esp         # Clean up pushed parameters
     
@@ -108,7 +100,7 @@ IRQ 4, 36
 IRQ 5, 37
 IRQ 6, 38
 IRQ 7, 39
-IRQ 8, 40    # RTC - This is IRQ 8 mapped to interrupt 40
+IRQ 8, 40    
 IRQ 9, 41
 IRQ 10, 42
 IRQ 11, 43
@@ -117,7 +109,6 @@ IRQ 13, 45
 IRQ 14, 46
 IRQ 15, 47
 
-# Common IRQ stub - FIXED VERSION
 irq_common_stub:
     pusha              # Save all registers (32 bytes)
     
@@ -127,10 +118,6 @@ irq_common_stub:
     movw %ax, %fs
     movw %ax, %gs
     
-    # FIXED: After pusha, stack layout is:
-    # [eax][ecx][edx][ebx][esp][ebp][esi][edi] = 32 bytes
-    # [irq_num][dummy] = 8 bytes (pushed before pusha)
-    # IRQ number is at esp+32
     
     movl 32(%esp), %eax   # Get IRQ number
     pushl %eax            # Push as argument for C handler
