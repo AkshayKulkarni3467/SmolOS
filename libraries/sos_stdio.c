@@ -25,11 +25,4 @@ int snprintf(char* str, size_t size, char* format, ...) {
     return strlen(format);
 }
 
-/*TODO : Implement file management later?*/
-FILE* fopen(char* filename, char* mode) { return 0; }
-int fclose(FILE* stream) { return 0; }
-size_t fread(void* ptr, size_t size, size_t count, FILE* stream) { return 0; }
-size_t fwrite(void* ptr, size_t size, size_t count, FILE* stream) { return 0; }
-int fseek(FILE* stream, long offset, int whence) { return 0; }
-long ftell(FILE* stream) { return 0; }
 

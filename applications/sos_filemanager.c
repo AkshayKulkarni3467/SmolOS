@@ -588,6 +588,7 @@ void text_editor(const char* filename) {
         
         for (volatile int i = 0; i < 5000; i++) asm volatile("nop");
     }
+    vga_set_color(VGA_WHITE,VGA_BLCK);
 }
 
 void file_viewer(const char* filename) {
