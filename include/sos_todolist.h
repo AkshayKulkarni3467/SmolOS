@@ -34,7 +34,6 @@ typedef struct {
     char filter_category[TODO_CATEGORY_LENGTH];
 } TodoList;
 
-// Main TODO list command
 void cmd_todo(void);
 
 #endif // INCLUDE_SMOLOS_TODOLIST_H

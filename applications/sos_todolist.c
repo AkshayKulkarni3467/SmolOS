@@ -662,4 +662,9 @@ void cmd_todo(void) {
     
     vga_clear();
     vga_set_color(VGA_WHITE, VGA_BLCK);
+    for(int i = 0;i<WIDTH;i++){
+        for(int j = 0;j<HEIGHT;j++){
+            vga_putchr_at(i,j,' ');
+        }
+    }
 }
