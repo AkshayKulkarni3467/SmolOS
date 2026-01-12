@@ -524,3 +524,86 @@ void rtc_irq_handler(void) {
         alarm_triggered = 1;
     }
 }
+
+static int get_rtc_seconds(void) {
+    int hours, minutes, seconds;
+    rtc_get_time(&hours, &minutes, &seconds);
+    return seconds;
+}
+
+static void wait_seconds(int seconds) {
+    int start_second = get_rtc_seconds();
+    int target_second = (start_second + seconds) % 60;
+    
+    while (get_rtc_seconds() != target_second) {
+        for (volatile int i = 0; i < 1000; i++);
+    }
+}
+
+void shutdown(void) {
+    vga_clear();
+    vga_println("=== SYSTEM SHUTDOWN ===");
+    vga_println("Goodbye from SmolOS!");
+    vga_println("Shutting down in 3 seconds...");
+    
+    vga_print(" 3...");
+    wait_seconds(1);
+    
+    vga_print(" 2...");
+    wait_seconds(1);
+    
+    vga_println(" 1...");
+    wait_seconds(1);
+    
+    vga_println("Shutting down NOW!");
+    
+    for (volatile int i = 0; i < 1000000; i++);
+    
+    
+    asm volatile ("outw %0, %1" : : "a"((short)0x2000), "Nd"((short)0x604));
+    
+    asm volatile ("outw %0, %1" : : "a"((short)0x2000), "Nd"((short)0xB004));
+    
+    asm volatile ("outw %0, %1" : : "a"((short)0x3400), "Nd"((short)0x4004));
+    
+    vga_println("Shutdown failed. Halting CPU...");
+    asm volatile ("hlt");
+    
+    while (1) {
+        asm volatile ("hlt");
+    }
+}
+
+void reboot(void) {
+    vga_clear();
+    vga_println("=== SYSTEM REBOOT ===");
+    vga_println("Restarting SmolOS in 3 seconds...");
+    
+    vga_print("3...");
+    wait_seconds(1);
+    
+    vga_print(" 2...");
+    wait_seconds(1);
+    
+    vga_println(" 1...");
+    wait_seconds(1);
+    
+    vga_println("Rebooting NOW!");
+    
+    for (volatile int i = 0; i < 1000000; i++);
+    
+    asm volatile ("cli");
+    
+    unsigned char good;
+    do {
+        asm volatile ("inb $0x64, %0" : "=a"(good));
+    } while (good & 0x02);
+    
+    asm volatile ("outb %0, $0x64" : : "a"((unsigned char)0xFE));
+    
+    asm volatile ("ud2");
+    
+    while (1) {
+        asm volatile ("hlt");
+    }
+}

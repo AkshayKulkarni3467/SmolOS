@@ -82,6 +82,9 @@ void rtc_get_local_time(RTCTime* time);
 
 uint32_t rtc_get_interrupt_count(void);
 
+void shutdown(void);
+void reboot(void);
+
 #define TZ_UTC      0, 0
 #define TZ_IST      5, 30
 #define TZ_EST     -5, 0

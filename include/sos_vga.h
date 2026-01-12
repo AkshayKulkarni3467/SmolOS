@@ -92,5 +92,7 @@ void vga_end_batch(void);
 void vga_clear_no_flicker(void);
 int vga_get_dirty_pixel_count(void);
 void vga_get_dirty_rect(int* x, int* y, int* width, int* height);
+void vga_putchr_direct(int x, int y, char c, uint8_t color);
+
 
 #endif // INCLUDE_SMOLOS_VGA_H

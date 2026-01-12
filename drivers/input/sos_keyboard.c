@@ -141,7 +141,12 @@ void keyboard_init(void) {
 
 void keyboard_poll(void) {
     uint8_t status = inb(KEYBOARD_STATUS_PORT);
+    
     if (!(status & 0x01)) return;
+    
+    if (status & 0x20) {
+        return;
+    }
     
     uint8_t code = inb(KEYBOARD_DATA_PORT);
     

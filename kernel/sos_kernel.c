@@ -14,6 +14,8 @@ void kernel_main(void) {
     pit_init(PIT_FREQ_18HZ);
     rtc_init();
     rtc_start_uptime();
+    mouse_init();
+    mouse_hide_cursor();
     fat16_init();
     run_shell();
     

@@ -515,6 +515,16 @@ void vga_get_dirty_rect(int* x, int* y, int* width, int* height) {
     *height = dirty_y2 - dirty_y1 + 1;
 }
 
+void vga_putchr_direct(int x, int y, char c, uint8_t color) {
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+    size_t index = y * WIDTH + x;
+    uint16_t entry = vga_startup(c, color);
+    VGA_MEM[index] = entry;
+    if (double_buffering_enabled) {
+        back_buffer[index] = entry;
+    }
+}
+
 
 
 #ifdef SMOLOS_VGA_TEST
