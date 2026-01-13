@@ -28,6 +28,7 @@ void pit_delay_us(uint32_t microseconds);
 uint64_t pit_get_ticks(void);
 uint32_t pit_get_seconds(void);
 uint32_t pit_get_milliseconds(void);
+uint32_t pit_get_total_milliseconds(void);
 void pit_format_uptime(char* buffer);
 
 void pit_register_callback(timer_callback_t callback);

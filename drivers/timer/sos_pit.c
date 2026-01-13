@@ -77,6 +77,11 @@ uint32_t pit_get_milliseconds(void) {
     return (uint32_t)(total_ms % 1000);
 }
 
+uint32_t pit_get_total_milliseconds(void) {
+    uint64_t total_ms = (pit_ticks * 1000) / pit_frequency;
+    return (uint32_t)total_ms;
+}
+
 void pit_format_uptime(char* buffer) {
     uint32_t total_seconds = pit_get_seconds();
     
