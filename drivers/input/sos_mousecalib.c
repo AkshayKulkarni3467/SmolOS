@@ -4,6 +4,7 @@
 #include "sos_vgraphics.h"
 #include "sos_keyboard.h"
 #include "sos_pit.h"
+#include "sos_fat16.h"
 
 static CalibrationState calibration_state = CALIBRATION_NEEDED;
 static CalibrationData calibration_data;
@@ -13,6 +14,8 @@ static uint32_t last_animation_time = 0;
 #define TARGET_X 40
 #define TARGET_Y 12
 #define ANIMATION_SPEED 200  
+#define CALIBRATION_FILE "MOUSECAL.DAT"
+
 
 
 void mouse_calibration_init(void) {
@@ -286,13 +289,105 @@ void calibration_show_success(void) {
 }
 
 
+
 void calibration_save_data(void) {
-    // TODO: Save calibration data to FAT16    
+    typedef struct {
+        int magic_number;      
+        int center_x;
+        int center_y;
+        int is_calibrated;
+        uint32_t calibration_timestamp;
+        int checksum;
+    } CalibrationFileData;
+    
+    CalibrationFileData file_data;
+    file_data.magic_number = 0x4D43414C;
+    file_data.center_x = calibration_data.center_x;
+    file_data.center_y = calibration_data.center_y;
+    file_data.is_calibrated = calibration_data.is_calibrated;
+    file_data.calibration_timestamp = calibration_data.calibration_timestamp;
+    
+    file_data.checksum = file_data.magic_number + 
+                         file_data.center_x + 
+                         file_data.center_y + 
+                         file_data.is_calibrated + 
+                         file_data.calibration_timestamp;
+    
+    fat16_write_file(CALIBRATION_FILE, (const char*)&file_data, sizeof(CalibrationFileData));
 }
 
 void calibration_load_data(void) {
-    // TODO: Load calibration data from FAT16; 
-    //To display calibration at startup, set is_calibrated to 0.
-
-    calibration_data.is_calibrated = 1;
+    if (!fat16_file_exists(CALIBRATION_FILE)) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(CALIBRATION_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    typedef struct {
+        int magic_number;
+        int center_x;
+        int center_y;
+        int is_calibrated;
+        uint32_t calibration_timestamp;
+        int checksum;
+    } CalibrationFileData;
+    
+    if (file_size < sizeof(CalibrationFileData)) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    CalibrationFileData* file_data = (CalibrationFileData*)file_content;
+    
+    if (file_data->magic_number != 0x4D43414C) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    int calculated_checksum = file_data->magic_number + 
+                             file_data->center_x + 
+                             file_data->center_y + 
+                             file_data->is_calibrated + 
+                             file_data->calibration_timestamp;
+    
+    if (calculated_checksum != file_data->checksum) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    if (file_data->center_x < 0 || file_data->center_x >= 80 ||
+        file_data->center_y < 0 || file_data->center_y >= 25) {
+        calibration_data.center_x = TARGET_X;
+        calibration_data.center_y = TARGET_Y;
+        calibration_data.is_calibrated = 0;
+        calibration_data.calibration_timestamp = 0;
+        return;
+    }
+    
+    calibration_data.center_x = file_data->center_x;
+    calibration_data.center_y = file_data->center_y;
+    calibration_data.is_calibrated = file_data->is_calibrated;
+    calibration_data.calibration_timestamp = file_data->calibration_timestamp;
 }

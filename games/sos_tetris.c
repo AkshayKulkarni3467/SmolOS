@@ -4,6 +4,9 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_TETRIS_SAVE_FILE "TESTRISSAVE.DAT"
 
 static uint8_t board[BOARD_HEIGHT][BOARD_WIDTH];
 static Piece current_piece;
@@ -777,11 +780,69 @@ void tetris_draw_menu(void) {
 }
 
 void tetris_save_high_score(void) {
-    //TODO save high score on fat16
-}
+    typedef struct {
+        int magic_number;     
+        int high_score;
+        int version;           
+        int checksum;
+    } GameTetrisSaveData;
+    
+    GameTetrisSaveData save_data;
+    save_data.magic_number = 0x23232323;  
+    save_data.high_score = high_score;
+    save_data.version = 1;
+    
+    save_data.checksum = save_data.magic_number + 
+                         save_data.high_score + 
+                         save_data.version;
+    
+    fat16_write_file(GAME_TETRIS_SAVE_FILE, 
+                     (const char*)&save_data, 
+                     sizeof(GameTetrisSaveData));}
 
 void tetris_load_high_score(void) {
-    high_score = 0;
+    if (!fat16_file_exists(GAME_TETRIS_SAVE_FILE)) {
+        high_score = 0;
+        return;
+    }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_TETRIS_SAVE_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        high_score = 0;
+        return;
+    }
+    
+    typedef struct {
+        int magic_number;
+        int high_score;
+        int version;
+        int checksum;
+    } GameTetrisSaveData;
+    
+    if (file_size < sizeof(GameTetrisSaveData)) {
+        high_score = 0;
+        return;
+    }
+    
+    GameTetrisSaveData* save_data = (GameTetrisSaveData*)file_content;
+    
+    if (save_data->magic_number != 0x23232323) {
+        high_score = 0;
+        return;
+    }
+    
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->high_score + 
+                             save_data->version;
+    
+    if (calculated_checksum != save_data->checksum) {
+        high_score = 0;
+        return;
+    }
+    
+    high_score = save_data->high_score;
 }
 
 void tetris_game_run(void) {

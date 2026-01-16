@@ -4,6 +4,9 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_SNAKE_SAVE_FILE "SNAKESAVE.DAT"
 
 
 static SnakeSegment snake[SNAKE_MAX_LENGTH];
@@ -588,11 +591,70 @@ int snake_get_speed(Difficulty diff) {
 }
 
 void snake_save_high_score(void) {
-    //TODO Implement saving scores in FAT16
+    typedef struct {
+        int magic_number;     
+        int high_score;
+        int version;           
+        int checksum;
+    } GameSnakeSaveData;
+    
+    GameSnakeSaveData save_data;
+    save_data.magic_number = 0x67676767;  
+    save_data.high_score = high_score;
+    save_data.version = 1;
+    
+    save_data.checksum = save_data.magic_number + 
+                         save_data.high_score + 
+                         save_data.version;
+    
+    fat16_write_file(GAME_SNAKE_SAVE_FILE, 
+                     (const char*)&save_data, 
+                     sizeof(GameSnakeSaveData));
 }
 
 void snake_load_high_score(void) {
-    high_score = 0;
+    if (!fat16_file_exists(GAME_SNAKE_SAVE_FILE)) {
+        high_score = 0;
+        return;
+    }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_SNAKE_SAVE_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        high_score = 0;
+        return;
+    }
+    
+    typedef struct {
+        int magic_number;
+        int high_score;
+        int version;
+        int checksum;
+    } GameSnakeSaveData;
+    
+    if (file_size < sizeof(GameSnakeSaveData)) {
+        high_score = 0;
+        return;
+    }
+    
+    GameSnakeSaveData* save_data = (GameSnakeSaveData*)file_content;
+    
+    if (save_data->magic_number != 0x67676767) {
+        high_score = 0;
+        return;
+    }
+    
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->high_score + 
+                             save_data->version;
+    
+    if (calculated_checksum != save_data->checksum) {
+        high_score = 0;
+        return;
+    }
+    
+    high_score = save_data->high_score;
 }
 
 void snake_game_run(void) {

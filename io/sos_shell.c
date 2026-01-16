@@ -293,7 +293,7 @@ void run_shell(void) {
                 shell_handle_history_down();
             }
             else if (c == CHAR_LEFT || c == CHAR_RIGHT) {
-                //TODO Implement cursor movement
+                
             }
             else if (c == CHAR_HOME) {
                 shell_clear_input_line();

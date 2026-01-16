@@ -94,5 +94,8 @@ int vga_get_dirty_pixel_count(void);
 void vga_get_dirty_rect(int* x, int* y, int* width, int* height);
 void vga_putchr_direct(int x, int y, char c, uint8_t color);
 
+void vga_print_at(char* str, int x, int y);
+void vga_print_int_at(int num, int x, int y);
+
 
 #endif // INCLUDE_SMOLOS_VGA_H

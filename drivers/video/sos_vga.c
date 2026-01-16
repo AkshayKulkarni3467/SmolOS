@@ -525,6 +525,26 @@ void vga_putchr_direct(int x, int y, char c, uint8_t color) {
     }
 }
 
+void vga_print_at(char* str, int x, int y) {
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+    
+    vga_t_column = x;
+    vga_t_row = y;
+    vga_setcursor(x, y);
+    
+    vga_print(str);
+}
+
+void vga_print_int_at(int num, int x, int y) {
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+
+    vga_t_column = x;
+    vga_t_row = y;
+    vga_setcursor(x, y);
+    
+    vga_print_int(num);
+}
+
 
 
 #ifdef SMOLOS_VGA_TEST

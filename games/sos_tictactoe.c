@@ -4,6 +4,9 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_TTT_SAVE_FILE "TTTSAVE.DAT"
 
 static Board board;
 static TicTacToeState game_state;
@@ -1045,9 +1048,81 @@ void tictactoe_cleanup(void) {
 
 
 void ttt_save_stats(void) {
-    // TODO: Save to FAT16
+    typedef struct {
+        int magic_number; 
+        PlayerStats splayer_stats;
+        PlayerStats sai_stats;   
+        int high_score;
+        int version;           
+        int checksum;
+    } GameTTTSaveData;
+
+    GameTTTSaveData save_data;
+    save_data.magic_number = 0x89898989;  
+    save_data.splayer_stats = player_stats;
+    save_data.sai_stats = ai_stats;
+    save_data.version = 1;
+    
+    save_data.checksum = save_data.magic_number + 
+                         save_data.splayer_stats.draws + 
+                         save_data.sai_stats.draws + 
+                         save_data.version;
+
+    fat16_write_file(GAME_TTT_SAVE_FILE, 
+        (const char*)&save_data, 
+        sizeof(GameTTTSaveData));
 }
 
 void ttt_load_stats(void) {
-    // TODO: Load from FAT16
+    if (!fat16_file_exists(GAME_TTT_SAVE_FILE)) {
+        player_stats = (PlayerStats){0};
+        ai_stats = (PlayerStats){0};
+        return;
+    }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_TTT_SAVE_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        player_stats = (PlayerStats){0};
+        ai_stats = (PlayerStats){0};
+        return;
+    }
+    
+    typedef struct {
+        int magic_number; 
+        PlayerStats splayer_stats;
+        PlayerStats sai_stats;   
+        int high_score;
+        int version;           
+        int checksum;
+    } GameTTTSaveData;
+    
+    if (file_size < sizeof(GameTTTSaveData)) {
+        player_stats = (PlayerStats){0};
+        ai_stats = (PlayerStats){0};
+        return;
+    }
+    
+    GameTTTSaveData* save_data = (GameTTTSaveData*)file_content;
+    
+    if (save_data->magic_number != 0x89898989) {
+        player_stats = (PlayerStats){0};
+        ai_stats = (PlayerStats){0};
+        return;
+    }
+    
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->splayer_stats.draws + 
+                             save_data->sai_stats.draws + 
+                             save_data->version;
+    
+    if (calculated_checksum != save_data->checksum) {
+        player_stats = (PlayerStats){0};
+        ai_stats = (PlayerStats){0};
+        return;
+    }
+    
+    player_stats = save_data->splayer_stats;
+    ai_stats = save_data->sai_stats;
 }

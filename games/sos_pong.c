@@ -4,6 +4,9 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_PONG_SAVE_FILE "PONGSAVE.DAT"
 
 
 static Paddle player1;
@@ -759,10 +762,79 @@ int pong_abs(int x) {
 }
 
 void pong_save_high_score(void) {
-    // TODO: Save high score to FAT16
+    typedef struct {
+        int magic_number;     
+        int high_score_p1;
+        int high_score_p2;
+        int version;           
+        int checksum;
+    } GamePongSaveData;
+
+    GamePongSaveData save_data;
+    save_data.magic_number = 0x56565656;  
+    save_data.high_score_p1 = high_score_p1;
+    save_data.high_score_p2 = high_score_p2;
+    save_data.version = 1;
+
+    save_data.checksum = save_data.magic_number + 
+                         save_data.high_score_p1 +
+                         save_data.high_score_p2 +  
+                         save_data.version;
+
+    fat16_write_file(GAME_PONG_SAVE_FILE, 
+        (const char*)&save_data, 
+        sizeof(GamePongSaveData));
 }
 
 void pong_load_high_score(void) {
-    high_score_p1 = 0;
-    high_score_p2 = 0;
+    if (!fat16_file_exists(GAME_PONG_SAVE_FILE)) {
+        high_score_p1 = 0;
+        high_score_p2 = 0;
+        return;
+    }
+
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_PONG_SAVE_FILE, &file_size);
+
+    if (!file_content || file_size == 0) {
+        high_score_p1 = 0;
+        high_score_p2 = 0;
+        return;
+    }
+
+    typedef struct {
+        int magic_number;     
+        int high_score_p1;
+        int high_score_p2;
+        int version;           
+        int checksum;
+    } GamePongSaveData;
+
+    if (file_size < sizeof(GamePongSaveData)) {
+        high_score_p1 = 0;
+        high_score_p2 = 0;
+        return;
+    }
+
+    GamePongSaveData* save_data = (GamePongSaveData*)file_content;
+
+    if (save_data->magic_number != 0x56565656) {
+        high_score_p1 = 0;
+        high_score_p2 = 0;
+        return;
+    }
+
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->high_score_p1 + 
+                             save_data->high_score_p2 + 
+                             save_data->version;
+
+    if (calculated_checksum != save_data->checksum) {
+        high_score_p1 = 0;
+        high_score_p2 = 0;
+        return;
+    }
+
+    high_score_p1 = save_data->high_score_p1;
+    high_score_p2 = save_data->high_score_p2;
 }

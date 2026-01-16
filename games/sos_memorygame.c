@@ -5,6 +5,9 @@
 #include "sos_mouse.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_MEMORY_SAVE_FILE "MEMGSAVE.DAT"
 
 static MemoryCard cards[MAX_CARDS];
 static MemoryGameState game_state;
@@ -426,15 +429,100 @@ void memory_draw_ui(void) {
 
 
 void memory_save_stats(void) {
-    // TODO: Implement saving to storage
+    typedef struct {
+        int magic_number;     
+        MemoryStats sstats;
+        int version;           
+        int checksum;
+    } GameMemSaveData;
+    
+    GameMemSaveData save_data;
+    save_data.magic_number = 0x91919191;  
+    save_data.sstats = stats;
+    save_data.version = 1;
+    
+    save_data.checksum = save_data.magic_number + 
+                         save_data.sstats.best_time + 
+                         save_data.version;
+    
+    fat16_write_file(GAME_MEMORY_SAVE_FILE, 
+                     (const char*)&save_data, 
+                     sizeof(GameMemSaveData));
 }
 
 void memory_load_stats(void) {
-    // TODO: Implement loading from storage
-    for (int i = 0; i < 3; i++) {
-        stats.best_time[i] = 9999;
-        stats.best_moves[i] = 9999;
+    if (!fat16_file_exists(GAME_MEMORY_SAVE_FILE)) {
+        stats = (MemoryStats){
+            .moves = 0,
+            .matches = 0,
+            .time_elapsed = 0,
+            .best_time = {999,999,999},
+            .best_moves = {999,999,999},
+        };
+        return;
     }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_MEMORY_SAVE_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        stats = (MemoryStats){
+            .moves = 0,
+            .matches = 0,
+            .time_elapsed = 0,
+            .best_time = {999,999,999},
+            .best_moves = {999,999,999},
+        };
+        return;
+    }
+    
+    typedef struct {
+        int magic_number;     
+        MemoryStats sstats;
+        int version;           
+        int checksum;
+    } GameMemSaveData;
+    
+    if (file_size < sizeof(GameMemSaveData)) {
+        stats = (MemoryStats){
+            .moves = 0,
+            .matches = 0,
+            .time_elapsed = 0,
+            .best_time = {999,999,999},
+            .best_moves = {999,999,999},
+        };
+        return;
+    }
+    
+    GameMemSaveData* save_data = (GameMemSaveData*)file_content;
+    
+    if (save_data->magic_number != 0x91919191) {
+        stats = (MemoryStats){
+            .moves = 0,
+            .matches = 0,
+            .time_elapsed = 0,
+            .best_time = {999,999,999},
+            .best_moves = {999,999,999},
+        };
+        return;
+    }
+    
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->sstats.best_time + 
+                             save_data->version;
+    
+    if (calculated_checksum != save_data->checksum) {
+        stats = (MemoryStats){
+            .moves = 0,
+            .matches = 0,
+            .time_elapsed = 0,
+            .best_time = {999,999,999},
+            .best_moves = {999,999,999},
+        };
+        return;
+    }
+    
+    stats = save_data->sstats;
 }
 
 

@@ -4,6 +4,10 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_MINESWEEP_SAVE_FILE "MSSAVE.DAT"
+
 
 
 static Cell board[BOARD_HEIGHT][BOARD_WIDTH];
@@ -802,10 +806,86 @@ void minesweeper_save_stats(void) {
     } else if (current_difficulty == DIFF_EXPERT && time_taken < best_time_expert) {
         best_time_expert = time_taken;
     }
+    typedef struct {
+        int magic_number;      
+        int beginner_high_score;
+        int intermediate_high_score;
+        int expert_high_score;
+        int version;          
+        int checksum;
+    } GameMineSweepSaveData;
+
+    GameMineSweepSaveData save_data;
+    save_data.magic_number = 0x34343434;  
+    save_data.beginner_high_score = best_time_beginner;
+    save_data.intermediate_high_score = best_time_intermediate;
+    save_data.expert_high_score = best_time_expert;
+    save_data.version = 1;
+
+    save_data.checksum = save_data.magic_number + 
+                         save_data.beginner_high_score + 
+                         save_data.intermediate_high_score + 
+                         save_data.expert_high_score + 
+                         save_data.version;
+
+    fat16_write_file(GAME_MINESWEEP_SAVE_FILE, 
+        (const char*)&save_data, 
+        sizeof(GameMineSweepSaveData));
 }
 
 void minesweeper_load_stats(void) {
-    //TODO Implement saving scores to FAT16
+    if (!fat16_file_exists(GAME_MINESWEEP_SAVE_FILE)) {
+        best_time_beginner = 999;
+        best_time_intermediate = 999;
+        best_time_expert = 999;
+        return;
+    }
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_MINESWEEP_SAVE_FILE, &file_size);
+    if (!file_content || file_size == 0) {
+        best_time_beginner = 999;
+        best_time_intermediate = 999;
+        best_time_expert = 999;
+        return;
+    }
+    typedef struct {
+        int magic_number;      
+        int beginner_high_score;
+        int intermediate_high_score;
+        int expert_high_score;
+        int version;          
+        int checksum;
+    } GameMineSweepSaveData;
+
+    if (file_size < sizeof(GameMineSweepSaveData)) {
+        best_time_beginner = 999;
+        best_time_intermediate = 999;
+        best_time_expert = 999;
+        return;
+    }
+    GameMineSweepSaveData* save_data = (GameMineSweepSaveData*)file_content;
+    if (save_data->magic_number != 0x34343434) {
+        best_time_beginner = 999;
+        best_time_intermediate = 999;
+        best_time_expert = 999;
+        return;
+    }
+
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->beginner_high_score + 
+                             save_data->intermediate_high_score + 
+                             save_data->expert_high_score +
+                             save_data->version;
+
+    if (calculated_checksum != save_data->checksum) {
+        best_time_beginner = 999;
+        best_time_intermediate = 999;
+        best_time_expert = 999;
+        return;
+    }
+    best_time_beginner = save_data->beginner_high_score;
+    best_time_intermediate = save_data->intermediate_high_score;
+    best_time_expert = save_data->expert_high_score;
 }
 
 void minesweeper_format_time(uint32_t seconds, char* buffer) {

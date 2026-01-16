@@ -4,6 +4,9 @@
 #include "sos_keyboard.h"
 #include "sos_pit.h"
 #include "sos_memory.h"
+#include "sos_fat16.h"
+
+#define GAME_2048_SAVE_FILE "2048SAVE.DAT"
 
 static Tile2048 grid[GRID_SIZE][GRID_SIZE];
 static Game2048State game_state;
@@ -832,14 +835,71 @@ void game_2048_draw_game_over(void) {
 
 
 void game_2048_save_high_score(void) {
-    // TODO: Implement saving to storage
+    typedef struct {
+        int magic_number;     
+        int high_score;
+        int version;           
+        int checksum;
+    } Game2048SaveData;
+    
+    Game2048SaveData save_data;
+    save_data.magic_number = 0x32303438;  
+    save_data.high_score = high_score;
+    save_data.version = 1;
+    
+    save_data.checksum = save_data.magic_number + 
+                         save_data.high_score + 
+                         save_data.version;
+    
+    fat16_write_file(GAME_2048_SAVE_FILE, 
+                     (const char*)&save_data, 
+                     sizeof(Game2048SaveData));
 }
 
 void game_2048_load_high_score(void) {
-    // TODO: Implement loading from storage
-    high_score = 0;
+    if (!fat16_file_exists(GAME_2048_SAVE_FILE)) {
+        high_score = 0;
+        return;
+    }
+    
+    uint32_t file_size;
+    char* file_content = fat16_read_file(GAME_2048_SAVE_FILE, &file_size);
+    
+    if (!file_content || file_size == 0) {
+        high_score = 0;
+        return;
+    }
+    
+    typedef struct {
+        int magic_number;
+        int high_score;
+        int version;
+        int checksum;
+    } Game2048SaveData;
+    
+    if (file_size < sizeof(Game2048SaveData)) {
+        high_score = 0;
+        return;
+    }
+    
+    Game2048SaveData* save_data = (Game2048SaveData*)file_content;
+    
+    if (save_data->magic_number != 0x32303438) {
+        high_score = 0;
+        return;
+    }
+    
+    int calculated_checksum = save_data->magic_number + 
+                             save_data->high_score + 
+                             save_data->version;
+    
+    if (calculated_checksum != save_data->checksum) {
+        high_score = 0;
+        return;
+    }
+    
+    high_score = save_data->high_score;
 }
-
 
 void game_2048_game_run(void) {
     game_2048_init();
