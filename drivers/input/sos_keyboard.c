@@ -34,6 +34,12 @@ static volatile KeyEvent event_buffer[BUFFER_SIZE];
 static volatile uint8_t event_head = 0;
 static volatile uint8_t event_tail = 0;
 
+static volatile int arrow_up_state = 0;
+static volatile int arrow_down_state = 0;
+static volatile int arrow_left_state = 0;
+static volatile int arrow_right_state = 0;
+
+
 
 #define EXTENDED_PREFIX      0xE0
 
@@ -133,6 +139,11 @@ void keyboard_init(void) {
     num_lock = 1;
     scroll_lock = 0;
     extended_key = 0;
+
+    arrow_up_state = 0;
+    arrow_down_state = 0;
+    arrow_left_state = 0;
+    arrow_right_state = 0;
     
     while (inb(KEYBOARD_STATUS_PORT) & 0x01) {
         inb(KEYBOARD_DATA_PORT);
@@ -184,7 +195,15 @@ void keyboard_poll(void) {
     }
     
     if (is_release) {
-        extended_key = 0;
+        if (extended_key) {
+            extended_key = 0;
+            switch (scancode) {
+                case KEY_UP:    arrow_up_state = 0; break;
+                case KEY_DOWN:  arrow_down_state = 0; break;
+                case KEY_LEFT:  arrow_left_state = 0; break;
+                case KEY_RIGHT: arrow_right_state = 0; break;
+            }
+        }
         return;
     }
     
@@ -195,18 +214,22 @@ void keyboard_poll(void) {
         
         switch(scancode) {
             case KEY_UP:      
+                arrow_up_state = 1;
                 special_char = CHAR_UP; 
                 key_code = KEY_ARROW_UP;
                 break;
             case KEY_DOWN:    
+                arrow_down_state = 1;
                 special_char = CHAR_DOWN; 
                 key_code = KEY_ARROW_DOWN;
                 break;
-            case KEY_LEFT:    
+            case KEY_LEFT:
+                arrow_left_state = 1;    
                 special_char = CHAR_LEFT; 
                 key_code = KEY_ARROW_LEFT;
                 break;
-            case KEY_RIGHT:   
+            case KEY_RIGHT: 
+                arrow_right_state = 1;  
                 special_char = CHAR_RIGHT; 
                 key_code = KEY_ARROW_RIGHT;
                 break;
@@ -468,6 +491,22 @@ void keyboard_set_leds(int caps, int num, int scroll) {
 
 void keyboard_update_leds(void) {
     keyboard_set_leds(caps_lock, num_lock, scroll_lock);
+}
+
+int is_up_pressed(void) {
+    return arrow_up_state;
+}
+
+int is_left_pressed(void) {
+    return arrow_left_state;
+}
+
+int is_right_pressed(void) {
+    return arrow_right_state;
+}
+
+int is_down_pressed(void) {
+    return arrow_down_state;
 }
 
 #ifdef SMOLOS_KEYBOARD_TEST

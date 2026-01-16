@@ -117,4 +117,9 @@ int is_special_key(char c);
 void keyboard_set_leds(int caps, int num, int scroll);
 void keyboard_update_leds(void);
 
+int is_up_pressed(void);
+int is_left_pressed(void);
+int is_right_pressed(void);
+int is_down_pressed(void);
+
 #endif // INCLUDE_SMOLOS_KEYBOARD_H
