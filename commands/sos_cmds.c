@@ -1,19 +1,16 @@
 #include "sos_cmds.h"
-#include "sos_shell.h"
 #include "sos_vga.h"
-#include "sos_vgraphics.h"
-#include "sos_string.h"
-#include "sos_memory.h"
-#include "sos_fat16.h"
-#include "sos_filemanager.h"
-#include "sos_ata.h"
+#include "sos_cmdfiles.h"
+#include "sos_cmdgames.h"
+#include "sos_cmdgui.h"
+#include "sos_cmdhelp.h"
+#include "sos_cmdinfo.h"
+#include "sos_cmdnetwork.h"
+#include "sos_cmdshell.h"
+#include "sos_cmdsys.h"
+#include "sos_cmdtime.h"
 
-#define MAX_ARGS 10
 
-typedef struct {
-    char* args[MAX_ARGS];
-    int argc;
-} CommandArgs;
 
 static CommandArgs parse_command(char* cmd) {
     CommandArgs result;
@@ -39,715 +36,16 @@ static CommandArgs parse_command(char* cmd) {
     return result;
 }
 
-static void print_with_scroll(const char* text) {
+void print_at_pos(int x, int y, const char* text, uint8_t color){
+    vga_set_color(color, VGA_BLCK);
+    for (int i = 0; text[i]; i++) {
+        vga_putchr_at(x + i, y, text[i]);
+    }
+}
+
+void print_with_scroll(const char* text) {
     vga_println((char*)text);
     shell_check_scroll();
-}
-
-void cmd_hdinfo(CommandArgs args) {
-    ata_init();
-    
-    if (!ata_is_available()) {
-        shell_print_error("No ATA disk detected!");
-        vga_set_color(VGA_DGREY, VGA_BLCK);
-        print_with_scroll("The system is using RAM-based virtual disk.");
-        print_with_scroll("To use a real disk, ensure QEMU has a disk image attached:");
-        print_with_scroll("  qemu-system-i386 -kernel SmolOS.bin -hda disk.img");
-        vga_set_color(VGA_WHITE, VGA_BLCK);
-        return;
-    }
-    
-    ATA_IdentifyInfo info;
-    if (ata_identify(&info) != 0) {
-        shell_print_error("Failed to identify disk!");
-        return;
-    }
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== ATA Hard Disk Information ===");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Model:         ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll(info.model);
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Serial:        ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll(info.serial);
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Total Sectors: ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print_int(info.lba28_sectors);
-    vga_println("");
-    shell_check_scroll();
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Capacity:      ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    
-    uint32_t size_mb = (info.lba28_sectors / 2048);  
-    vga_print_int(size_mb);
-    vga_println(" MB");
-    shell_check_scroll();
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("LBA Support:   ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll(info.supports_lba ? "Yes" : "No");
-    
-    print_with_scroll("");
-    
-    if (fat16_using_real_disk()) {
-        vga_set_color(VGA_LGREEN, VGA_BLCK);
-        print_with_scroll("[S] FAT16 filesystem is stored on this disk");
-        vga_set_color(VGA_WHITE, VGA_BLCK);
-    } else {
-        vga_set_color(VGA_YELLOW, VGA_BLCK);
-        print_with_scroll("[F] FAT16 filesystem is in RAM (not persistent)");
-        vga_set_color(VGA_WHITE, VGA_BLCK);
-    }
-}
-
-void cmd_files(CommandArgs args) {
-    file_manager_command();
-}
-
-void cmd_ls(CommandArgs args) {
-    fat16_init();
-    
-    FAT16_FileInfo files[50];
-    int count = fat16_list_files(files, 50);
-    
-    if (count == 0) {
-        print_with_scroll("No files found.");
-        return;
-    }
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("Files:");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    
-    for (int i = 0; i < count; i++) {
-        vga_print("  ");
-        vga_print(files[i].name);
-        
-        int name_len = strlen(files[i].name);
-        for (int j = name_len; j < 20; j++) vga_putchr(' ');
-        
-        char size_str[32];
-        format_size(files[i].size, size_str);
-        vga_println(size_str);
-        shell_check_scroll();
-    }
-    
-    vga_println("");
-    shell_check_scroll();
-}
-
-void cmd_cat(CommandArgs args) {
-    if (args.argc < 2) {
-        shell_print_error("Usage: cat <filename>");
-        return;
-    }
-    
-    fat16_init();
-    
-    char* filename = args.args[1];
-    
-    if (!fat16_file_exists(filename)) {
-        shell_print_error("File not found!");
-        return;
-    }
-    
-    uint32_t size;
-    char* content = fat16_read_file(filename, &size);
-    
-    if (!content) {
-        shell_print_error("Error reading file!");
-        return;
-    }
-    
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    
-    for (uint32_t i = 0; i < size; i++) {
-        vga_putchr(content[i]);
-        if (content[i] == '\n') {
-            shell_check_scroll();
-        }
-    }
-    
-    if (size > 0 && content[size - 1] != '\n') {
-        vga_println("");
-    }
-    
-    shell_check_scroll();
-}
-
-void cmd_touch(CommandArgs args) {
-    if (args.argc < 2) {
-        shell_print_error("Usage: touch <filename>");
-        return;
-    }
-    
-    fat16_init();
-    
-    char* filename = args.args[1];
-    
-    if (fat16_file_exists(filename)) {
-        shell_print_info("File already exists.");
-        return;
-    }
-    
-    int result = fat16_create_file(filename, "", 0);
-    if (result == 0) {
-        shell_print_success("File created!");
-    } else {
-        shell_print_error("Error creating file!");
-    }
-}
-
-void cmd_rm(CommandArgs args) {
-    if (args.argc < 2) {
-        shell_print_error("Usage: rm <filename>");
-        return;
-    }
-    
-    fat16_init();
-    
-    char* filename = args.args[1];
-    
-    if (!fat16_file_exists(filename)) {
-        shell_print_error("File not found!");
-        return;
-    }
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Delete '");
-    vga_print(filename);
-    vga_print("'? (y/n): ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    
-    char confirm = wait_for_char();
-    vga_putchr(confirm);
-    vga_println("");
-    shell_check_scroll();
-    
-    if (confirm == 'y' || confirm == 'Y') {
-        if (fat16_delete_file(filename) == 0) {
-            shell_print_success("File deleted.");
-        } else {
-            shell_print_error("Error deleting file.");
-        }
-    } else {
-        shell_print_info("Deletion cancelled.");
-    }
-}
-
-void cmd_diskinfo_enhanced(CommandArgs args) {
-    fat16_init();
-    
-    uint32_t total = fat16_get_total_space();
-    uint32_t free = fat16_get_free_space();
-    uint32_t used = total - free;
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== File System Information ===");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Type:        ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll("FAT16");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Storage:     ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll(fat16_using_real_disk() ? "ATA Hard Disk" : "RAM (Virtual)");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Total Space: ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    char size_str[32];
-    format_size(total, size_str);
-    print_with_scroll(size_str);
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Used Space:  ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    format_size(used, size_str);
-    print_with_scroll(size_str);
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Free Space:  ");
-    vga_set_color(VGA_LGREEN, VGA_BLCK);
-    format_size(free, size_str);
-    print_with_scroll(size_str);
-    
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll("");
-    
-    int percent = (used * 100) / total;
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print("Usage:       ");
-    vga_set_color(percent > 80 ? VGA_RED : VGA_WHITE, VGA_BLCK);
-    vga_print_int(percent);
-    vga_println("%");
-    shell_check_scroll();
-    
-    vga_set_color(VGA_DGREY, VGA_BLCK);
-    vga_print("             [");
-    int bar_width = 40;
-    int filled = (bar_width * percent) / 100;
-    for (int i = 0; i < bar_width; i++) {
-        if (i < filled) {
-            vga_set_color(VGA_LGREEN, VGA_BLCK);
-            vga_putchr('#');
-        } else {
-            vga_set_color(VGA_DGREY, VGA_BLCK);
-            vga_putchr('-');
-        }
-    }
-    vga_set_color(VGA_DGREY, VGA_BLCK);
-    vga_println("]");
-    shell_check_scroll();
-    
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_help_sys(CommandArgs args){
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  help           - Show this help message");
-    print_with_scroll("  about          - Display system information");
-    print_with_scroll("  version        - Show SmolOS version");
-    print_with_scroll("  sysinfo        - Display detailed system info");
-    print_with_scroll("  clear          - Clear the screen");
-    print_with_scroll("  exit           - Exit the shell");
-    print_with_scroll("");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_help_display(CommandArgs args){
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  echo <text>    - Print text to screen");
-    print_with_scroll("  color <fg> <bg>- Change text color");
-    print_with_scroll("  banner         - Display SmolOS banner");
-    print_with_scroll("  rainbow <text> - Print text in rainbow colors");
-    print_with_scroll("");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-}
-
-void cmd_help_shell(CommandArgs args){
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  history        - Show command history");
-    print_with_scroll("  clear-history  - Clear command history");
-    print_with_scroll("  username <n>   - Set username");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-}
-
-void cmd_help_utils(CommandArgs args){
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  calc <expr>    - Simple calculator");
-    print_with_scroll("  time           - Show current time (simulated)");
-    print_with_scroll("  uptime         - Show system uptime");
-    print_with_scroll("  test           - Run graphics test");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-}
-
-void cmd_help_files(CommandArgs args){
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  files / fm         - Open file manager");
-    print_with_scroll("  ls / dir           - List files");
-    print_with_scroll("  cat <file>         - Display file contents");
-    print_with_scroll("  touch <file>       - Create empty file");
-    print_with_scroll("  rm <file>          - Delete file");
-    print_with_scroll("  diskinfo / df      - Show disk space");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-}
-
-void cmd_help(CommandArgs args) {
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== SmolOS Command Reference ===");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("System Commands:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  help           - Show this help message");
-    print_with_scroll("  about          - Display system information");
-    print_with_scroll("  version        - Show SmolOS version");
-    print_with_scroll("  sysinfo        - Display detailed system info");
-    print_with_scroll("  clear          - Clear the screen");
-    print_with_scroll("  exit           - Exit the shell");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("Display Commands:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  echo <text>    - Print text to screen");
-    print_with_scroll("  color <fg> <bg>- Change text color");
-    print_with_scroll("  banner         - Display SmolOS banner");
-    print_with_scroll("  rainbow <text> - Print text in rainbow colors");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("Shell Commands:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  history        - Show command history");
-    print_with_scroll("  clear-history  - Clear command history");
-    print_with_scroll("  username <n>   - Set username");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("Utility Commands:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  calc <expr>    - Simple calculator");
-    print_with_scroll("  time           - Show current time (simulated)");
-    print_with_scroll("  uptime         - Show system uptime");
-    print_with_scroll("  test           - Run graphics test");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("File Commands:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  files / fm         - Open file manager");
-    print_with_scroll("  ls / dir           - List files");
-    print_with_scroll("  cat <file>         - Display file contents");
-    print_with_scroll("  touch <file>       - Create empty file");
-    print_with_scroll("  rm <file>          - Delete file");
-    print_with_scroll("  diskinfo / df      - Show disk space");
-    print_with_scroll("");
-}
-
-void cmd_about(CommandArgs args) {
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    for (int i = 0; startup_text[i] != 0; i++) {
-        print_with_scroll((char*)startup_text[i]);
-    }
-    
-    print_with_scroll("");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    print_with_scroll("SmolOS Version 1.0");
-    print_with_scroll("A minimal bare-metal operating system");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("Features:");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("  * VGA Text Mode Graphics");
-    print_with_scroll("  * Keyboard Input Support");
-    print_with_scroll("  * Double-Buffered Rendering");
-    print_with_scroll("  * Command Shell Interface");
-    print_with_scroll("");
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("Created by: Akshay");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_version(CommandArgs args) {
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("SmolOS Version 1.0.0");
-    vga_set_color(VGA_LGREY, VGA_BLCK);
-    print_with_scroll("Build: January 2026");
-    print_with_scroll("Architecture: x86 (32-bit)");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_clear(CommandArgs args) {
-    vga_clear();
-}
-
-void cmd_echo(CommandArgs args) {
-    if (args.argc < 2) {
-        shell_print_error("Usage: echo <text>");
-        return;
-    }
-    
-    for (int i = 1; i < args.argc; i++) {
-        vga_print(args.args[i]);
-        if (i < args.argc - 1) vga_print(" ");
-    }
-    vga_println("");
-    shell_check_scroll();
-}
-
-void cmd_color(CommandArgs args) {
-    if (args.argc < 3) {
-        print_with_scroll("Usage: color <foreground> <background>");
-        print_with_scroll("Colors: 0-15 (0=black, 7=grey, 15=white)");
-        return;
-    }
-    
-    int fg = args.args[1][0] - '0';
-    int bg = args.args[2][0] - '0';
-    
-    if (fg < 0 || fg > 15 || bg < 0 || bg > 15) {
-        shell_print_error("Colors must be 0-15");
-        return;
-    }
-    
-    vga_set_color(fg, bg);
-    shell_print_success("Color changed!");
-}
-
-void cmd_banner(CommandArgs args) {
-    int save_row = vga_t_row;
-    
-    vga_begin_batch();
-    vga_clear();
-    
-    vga_draw_box_double(10, 3, 60, 15, VGA_CYAN, VGA_BLCK);
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    int start_line = 5;
-    for (int i = 0; startup_text[i] != 0; i++) {
-        vga_print_centered((char*)startup_text[i], start_line + i);
-    }
-    
-    vga_print_centered("Press any key to continue...", 19);
-    
-    vga_end_batch();
-    
-    wait_for_char();
-    vga_clear();
-}
-
-void cmd_rainbow(CommandArgs args) {
-    if (args.argc < 2) {
-        shell_print_error("Usage: rainbow <text>");
-        return;
-    }
-    
-    char text[256] = {0};
-    int pos = 0;
-    
-    for (int i = 1; i < args.argc; i++) {
-        int j = 0;
-        while (args.args[i][j] && pos < 255) {
-            text[pos++] = args.args[i][j++];
-        }
-        if (i < args.argc - 1 && pos < 255) {
-            text[pos++] = ' ';
-        }
-    }
-    text[pos] = '\0';
-    
-    int cur_x, cur_y;
-    vga_get_cursor_pos(&cur_x, &cur_y);
-    
-    vga_rainbow_text(text, cur_x, cur_y);
-    vga_println("");
-    shell_check_scroll();
-}
-
-void cmd_sysinfo(CommandArgs args) {
-    int scroll_was_enabled = scroll_enabled;
-    
-    vga_begin_batch();
-    vga_clear();
-    
-    vga_draw_box_single(5, 2, 70, 18, VGA_CYAN, VGA_BLCK);
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print_centered("System Information", 3);
-    
-    vga_draw_separator(6, 4, 68, VGA_CYAN, VGA_BLCK);
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 6, 0);
-    vga_print("OS Name:        ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("SmolOS v1.0");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 7, 0);
-    vga_print("Architecture:   ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("x86 (32-bit)");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 8, 0);
-    vga_print("Boot Mode:      ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("Multiboot");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 9, 0);
-    vga_print("Display:        ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("VGA Text Mode (80x25)");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 10, 0);
-    vga_print("Memory (Stack): ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("8 KB");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 11, 0);
-    vga_print("Graphics:       ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("Double Buffered");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 12, 0);
-    vga_print("Keyboard:       ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("PS/2 Compatible");
-    
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_putchr_at(8, 13, 0);
-    vga_print("Shell:          ");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    vga_print("SmolOS v1.0");
-    
-    vga_draw_separator(6, 15, 68, VGA_CYAN, VGA_BLCK);
-    
-    vga_set_color(VGA_GREEN, VGA_BLCK);
-    vga_print_centered("System Status: Running", 17);
-    
-    vga_set_color(VGA_DGREY, VGA_BLCK);
-    vga_print_centered("Press any key to continue...", 19);
-    
-    vga_end_batch();
-    
-    wait_for_char();
-    vga_clear();
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_calc(CommandArgs args) {
-    if (args.argc < 4) {
-        print_with_scroll("Usage: calc <num1> <op> <num2>");
-        print_with_scroll("Operators: + - * /");
-        print_with_scroll("Example: calc 10 + 5");
-        return;
-    }
-    
-    int num1 = 0, num2 = 0;
-    
-    int i = 0;
-    while (args.args[1][i]) {
-        if (args.args[1][i] >= '0' && args.args[1][i] <= '9') {
-            num1 = num1 * 10 + (args.args[1][i] - '0');
-        }
-        i++;
-    }
-    
-    i = 0;
-    while (args.args[3][i]) {
-        if (args.args[3][i] >= '0' && args.args[3][i] <= '9') {
-            num2 = num2 * 10 + (args.args[3][i] - '0');
-        }
-        i++;
-    }
-    
-    char op = args.args[2][0];
-    int result = 0;
-    
-    switch (op) {
-        case '+': result = num1 + num2; break;
-        case '-': result = num1 - num2; break;
-        case '*': result = num1 * num2; break;
-        case '/':
-            if (num2 == 0) {
-                shell_print_error("Division by zero!");
-                return;
-            }
-            result = num1 / num2;
-            break;
-        default:
-            shell_print_error("Invalid operator. Use: + - * /");
-            return;
-    }
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print("Result: ");
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print_int(num1);
-    vga_print(" ");
-    vga_putchr(op);
-    vga_print(" ");
-    vga_print_int(num2);
-    vga_print(" = ");
-    vga_set_color(VGA_LGREEN, VGA_BLCK);
-    vga_print_int(result);
-    vga_println("");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    shell_check_scroll();
-}
-
-void cmd_time(CommandArgs args) {
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print("Current Time: ");
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("12:34:56");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_uptime(CommandArgs args) {
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print("System Uptime: ");
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("0 days, 0 hours, 5 minutes");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-}
-
-void cmd_history(CommandArgs args) {
-    shell_show_history();
-}
-
-void cmd_clear_history(CommandArgs args) {
-    shell_clear_history();
-}
-
-void cmd_username(CommandArgs args) {
-    if (args.argc < 2) {
-        vga_print("Current username: ");
-        print_with_scroll(shell_get_username());
-        return;
-    }
-    
-    shell_set_username(args.args[1]);
-    shell_print_success("Username updated!");
-}
-
-void cmd_exit(CommandArgs args) {
-    vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_with_scroll("Exiting shell...");
-    vga_set_color(VGA_WHITE, VGA_BLCK);
-    shell_exit();
-}
-
-void cmd_test(CommandArgs args) {
-    vga_begin_batch();
-    vga_clear();
-    
-    vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print_centered("=== Graphics Demo ===", 2);
-    
-    vga_draw_box_single(10, 5, 20, 5, VGA_RED, VGA_BLCK);
-    vga_draw_box_double(35, 5, 20, 5, VGA_GREEN, VGA_BLCK);
-    vga_draw_shadow_box(60, 5, 15, 5, VGA_BLUE, VGA_BLCK);
-    
-    vga_draw_progress_bar(10, 12, 30, 75, VGA_GREEN, VGA_DGREY, VGA_BLCK);
-    vga_draw_progress_bar(10, 14, 30, 50, VGA_YELLOW, VGA_DGREY, VGA_BLCK);
-    vga_draw_progress_bar(10, 16, 30, 25, VGA_RED, VGA_DGREY, VGA_BLCK);
-    
-    vga_rainbow_text("SmolOS Graphics!", 25, 19);
-    
-    vga_set_color(VGA_DGREY, VGA_BLCK);
-    vga_print_centered("Press any key to continue...", 22);
-    
-    vga_end_batch();
-    
-    wait_for_char();
-    vga_clear();
-    vga_set_color(VGA_WHITE, VGA_BLCK);
 }
 
 
@@ -810,12 +108,6 @@ void run_command(const char* cmd_str) {
     else if (strcmp(cmd, "calc") == 0) {
         cmd_calc(args);
     }
-    else if (strcmp(cmd, "time") == 0) {
-        cmd_time(args);
-    }
-    else if (strcmp(cmd, "uptime") == 0) {
-        cmd_uptime(args);
-    }
     else if (strcmp(cmd, "history") == 0) {
         cmd_history(args);
     }
@@ -824,12 +116,6 @@ void run_command(const char* cmd_str) {
     }
     else if (strcmp(cmd, "username") == 0) {
         cmd_username(args);
-    }
-    else if (strcmp(cmd, "exit") == 0) {
-        cmd_exit(args);
-    }
-    else if (strcmp(cmd, "test") == 0) {
-        cmd_test(args);
     }
     else if (strcmp(cmd, "files") == 0){
         file_manager_command();
@@ -854,6 +140,165 @@ void run_command(const char* cmd_str) {
     }
     else if (strcmp(cmd, "diskinfo") == 0){
         cmd_diskinfo_enhanced(args);
+    }
+    else if (strcmp(cmd, "calc-gui") == 0){
+        calc_command();
+    }
+    else if (strcmp(cmd, "time") == 0) {
+        cmd_time_rtc(args);
+    }
+    else if (strcmp(cmd, "date") == 0) {
+        cmd_date(args);
+    }
+    else if (strcmp(cmd, "datetime") == 0) {
+        cmd_datetime(args);
+    }
+    else if (strcmp(cmd, "clock") == 0) {
+        cmd_clock(args);
+    }
+    else if (strcmp(cmd, "uptime") == 0) {
+        cmd_uptime_rtc(args);
+    }
+    else if (strcmp(cmd, "timezone") == 0) {
+        cmd_timezone(args);
+    }
+    else if (strcmp(cmd, "setalarm") == 0) {
+        cmd_setalarm(args);
+    }
+    else if (strcmp(cmd, "checkalarm") == 0) {
+        cmd_checkalarm(args);
+    }
+    else if (strcmp(cmd, "pitinfo") == 0) {
+        cmd_pitinfo(args);
+    }
+    else if (strcmp(cmd, "pituptime") == 0) {
+        cmd_pituptime(args);
+    }
+    else if (strcmp(cmd, "benchmark") == 0) {
+        cmd_benchmark(args);
+    }
+    else if (strcmp(cmd, "sleep") == 0) {
+        cmd_sleep(args);
+    }
+    else if (strcmp(cmd, "timer") == 0) {
+        cmd_timer(args);
+    }
+    else if (strcmp(cmd, "countdown") == 0) {
+        cmd_countdown(args);
+    }
+    else if (strcmp(cmd, "stopwatch") == 0) {
+        cmd_stopwatch(args);
+    }
+    else if (strcmp(cmd, "perfmon") == 0) {
+        cmd_perfmon(args);
+    }
+    else if (strcmp(cmd, "setalarm-pit") == 0) {
+        cmd_setalarm_pit(args);
+    }
+    else if (strcmp(cmd, "checkalarm-pit") == 0) {
+        cmd_checkalarm_pit(args);
+    }
+    else if (strcmp(cmd, "reaction") == 0) {
+        cmd_reaction(args);
+    }
+    else if (strcmp(cmd, "todo") == 0) {
+        cmd_todo();
+    }
+    else if (strcmp(cmd, "mousetest") == 0) {
+        cmd_mousetest(args);
+    }
+    else if (strcmp(cmd, "mousedraw") == 0) {
+        cmd_mousedraw(args);
+    }
+    else if (strcmp(cmd, "mouseinfo") == 0) {
+        cmd_mouseinfo(args);
+    }
+    else if (strcmp(cmd, "shutdown") == 0 || strcmp(cmd, "exit") == 0) {
+        shutdown();
+    }
+    else if (strcmp(cmd, "reboot") == 0){
+        reboot();
+    }
+    else if (strcmp(cmd, "artgallery") == 0) {
+        art_gallery_main();
+    }
+    else if (strcmp(cmd, "gui") == 0) {
+        cmd_gui(args);
+    }
+    else if (strcmp(cmd, "snake") == 0) {
+        cmd_snake(args);
+    }
+    else if (strcmp(cmd,"tetris") == 0){
+        cmd_tetris(args);
+    }
+    else if (strcmp(cmd,"pong") == 0){
+        cmd_pong(args);
+    }
+    else if (strcmp(cmd,"breakout") == 0){
+        cmd_breakout(args);
+    }
+    else if (strcmp(cmd,"minesweeper") == 0){
+        cmd_minesweeper(args);
+    }
+    else if (strcmp(cmd,"2048") == 0){
+        cmd_2048(args);
+    }
+    else if (strcmp(cmd,"lifesim") == 0){
+        cmd_lifesim(args);
+    }
+    else if (strcmp(cmd,"memorygame") == 0){
+        cmd_memorygame(args);
+    }
+    else if (strcmp(cmd, "spaceshooter") == 0){
+        cmd_spaceshooter(args);
+    }
+    else if (strcmp(cmd,"tictactoe") == 0){
+        cmd_tictactoe(args);
+    }
+    else if (strcmp(cmd,"mirrorgame") == 0){
+        cmd_mirrorgame(args);
+    }
+    else if(strcmp(cmd,"typeracer") == 0){
+        cmd_typeracer(args);
+    }
+    else if(strcmp(cmd,"lunarlander") == 0){
+        cmd_lunarlander(args);
+    }
+    else if(strcmp(cmd,"logiccircuit") == 0){
+        run_logiccircuit_game();
+    }
+    else if (strcmp(cmd,"musicplayer") == 0){
+        cmd_musicplayer(args);
+    }
+    else if (strcmp(cmd, "pciinfo") == 0){
+        cmd_pciinfo();
+    }
+    else if (strcmp(cmd, "lspci") == 0){
+        cmd_lspci();
+    }
+    else if (strcmp(cmd, "netinfo") == 0){
+        cmd_netinfo_();
+    }
+    else if (strcmp(cmd, "ping") == 0){
+        cmd_ping_(args);
+    }
+    else if (strcmp(cmd,"sendudp") == 0){
+        cmd_udp_send_(args);
+    }
+    else if (strcmp(cmd,"nslookup") == 0){
+        cmd_dns_(args);
+    }
+    else if(strcmp(cmd, "tcpping") == 0){
+        cmd_tcp_ping_(args);
+    }
+    else if (strcmp(cmd, "mousecalibrate") == 0 || strcmp(cmd, "mouse-cal") == 0) {
+        cmd_mouse_calibrate(args);
+    }
+    else if (strcmp(cmd, "mouse-reset-cal") == 0) {
+        cmd_mouse_reset_calibration(args);
+    }
+    else if (strcmp(cmd, "mouse-cal-info") == 0) {
+        cmd_mouse_calibration_info(args);
     }
     else {
         vga_set_color(VGA_LRED, VGA_BLCK);
