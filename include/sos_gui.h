@@ -68,4 +68,7 @@ void gui_app_file_browser(void);
 void gui_app_clock(void);
 void gui_app_art_gallery(void);
 
+void gui_app_games_launcher(void);
+void gui_app_network_tools(void);
+
 #endif // INCLUDE_SMOLOS_GUI_H
