@@ -5,6 +5,7 @@
 
 void cmd_about(CommandArgs args);
 void cmd_banner(CommandArgs args);
+void cmd_version(CommandArgs args);
 void cmd_sysinfo(CommandArgs args);
 
 #endif //INCLUDE_SMOLOS_CMDINFO_H

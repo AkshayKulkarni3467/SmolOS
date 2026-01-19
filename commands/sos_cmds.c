@@ -66,20 +66,29 @@ void run_command(const char* cmd_str) {
     if (strcmp(cmd, "help") == 0) {
         cmd_help(args);
     }
-    else if (strcmp(cmd, "help-sys") == 0) {
-        cmd_help_sys(args);
+    else if (strcmp(cmd, "help-files") == 0) {
+        cmd_help_files(args);
     }
-    else if (strcmp(cmd, "help-display") == 0) {
-        cmd_help_display(args);
+    else if (strcmp(cmd, "help-games") == 0) {
+        cmd_help_games(args);
     }
-    else if (strcmp(cmd, "help-shell") == 0) {
+    else if (strcmp(cmd, "help-gui") == 0) {
+        cmd_help_gui(args);
+    }
+    else if (strcmp(cmd, "help-info") == 0) {
+        cmd_help_info(args);
+    }
+    else if (strcmp(cmd ,"help-network") == 0) {
+        cmd_help_network(args);
+    }
+    else if (strcmp(cmd ,"help-shell") == 0) {
         cmd_help_shell(args);
     }
-    else if (strcmp(cmd, "help-utils") == 0) {
-        cmd_help_utils(args);
+    else if (strcmp(cmd ,"help-sys") == 0) {
+        cmd_help_sys(args);
     }
-    else if (strcmp(cmd ,"help-fm") == 0) {
-        cmd_help_files(args);
+    else if (strcmp(cmd ,"help-time") == 0) {
+        cmd_help_time(args);
     }
     else if (strcmp(cmd, "about") == 0) {
         cmd_about(args);
@@ -116,9 +125,6 @@ void run_command(const char* cmd_str) {
     }
     else if (strcmp(cmd, "username") == 0) {
         cmd_username(args);
-    }
-    else if (strcmp(cmd, "files") == 0){
-        file_manager_command();
     }
     else if (strcmp(cmd, "files") == 0 || strcmp(cmd, "fm") == 0) {
         cmd_files(args);
