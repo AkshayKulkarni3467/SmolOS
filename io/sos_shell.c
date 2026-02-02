@@ -111,11 +111,11 @@ void shell_display_startup(void) {
     
     vga_println("");
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print_centered("==============================================", 8);
+    vga_print_centered("---------------------------------------------", 8);
     vga_set_color(VGA_WHITE, VGA_BLCK);
     vga_print_centered("Welcome to SmolOS - A Minimal Operating System", 9);
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print_centered("==============================================", 10);
+    vga_print_centered("---------------------------------------------", 10);
     
     vga_set_color(VGA_LGREY, VGA_BLCK);
     vga_println("\n");

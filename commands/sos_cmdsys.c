@@ -13,7 +13,7 @@ void cmd_netinfo_(void){
 
 void cmd_pitinfo(CommandArgs args) {
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== PIT (Programmable Interval Timer) Info ===");
+    print_with_scroll("PIT (Programmable Interval Timer) Info");
     print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
@@ -69,7 +69,7 @@ void cmd_pitinfo(CommandArgs args) {
 
 void cmd_benchmark(CommandArgs args) {
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== CPU Benchmark ===");
+    print_with_scroll("CPU Benchmark");
     print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
@@ -134,7 +134,7 @@ void cmd_perfmon(CommandArgs args) {
     
     vga_draw_box_double(5, 2, 70, 20, VGA_CYAN, VGA_BLCK);
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print_centered("=== Performance Monitor ===", 3);
+    vga_print_centered("Performance Monitor", 3);
     vga_draw_separator(6, 4, 68, VGA_CYAN, VGA_BLCK);
     
     vga_set_color(VGA_DGREY, VGA_BLCK);
@@ -311,7 +311,7 @@ void cmd_hdinfo(CommandArgs args) {
     }
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== ATA Hard Disk Information ===");
+    print_with_scroll("ATA Hard Disk Information");
     vga_set_color(VGA_WHITE, VGA_BLCK);
     print_with_scroll("");
     
@@ -364,7 +364,7 @@ void cmd_mousetest(CommandArgs args) {
     vga_clear();
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print_centered("=== Mouse Test ===", 1);
+    vga_print_centered("Mouse Test", 1);
     vga_set_color(VGA_YELLOW, VGA_BLCK);
     vga_print_centered("Move the mouse and click buttons", 2);
     vga_set_color(VGA_DGREY, VGA_BLCK);
@@ -522,7 +522,7 @@ void cmd_mouse_calibration_info(CommandArgs args) {
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
     vga_println("Mouse Calibration Information:");
-    vga_println("=============================");
+    vga_println("-----------------------");
     shell_check_scroll();
     
     vga_set_color(VGA_WHITE, VGA_BLCK);
@@ -647,7 +647,7 @@ void cmd_mousedraw(CommandArgs args) {
     vga_clear();
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print_centered("=== Mouse Drawing Program ===", 1);
+    vga_print_centered("Mouse Drawing Program", 1);
     vga_set_color(VGA_YELLOW, VGA_BLCK);
     vga_print_centered("Left: Draw | Right: Erase | C: Clear | ESC: Exit", 2);
     
@@ -751,7 +751,7 @@ void cmd_mousedraw(CommandArgs args) {
 
 void cmd_mouseinfo(CommandArgs args) {
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== Mouse Information ===");
+    print_with_scroll("Mouse Information");
     print_with_scroll("");
     
     MouseState state;
@@ -821,7 +821,7 @@ void cmd_diskinfo_enhanced(CommandArgs args) {
     uint32_t used = total - free;
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== File System Information ===");
+    print_with_scroll("File System Information");
     print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);

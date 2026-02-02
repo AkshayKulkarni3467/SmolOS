@@ -566,7 +566,7 @@ void tetris_draw_held_piece(void) {
 void tetris_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== TETRIS ===", 0);
+    vga_print_centered("TETRIS", 0);
     
     vga_draw_box_single(9, 9, 18, 8, VGA_CYAN, VGA_BLCK);
     vga_set_color(VGA_YELLOW, VGA_BLCK);

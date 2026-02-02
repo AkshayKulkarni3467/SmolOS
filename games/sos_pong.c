@@ -526,7 +526,7 @@ void pong_draw_ball(void) {
 void pong_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== PONG ===", 0);
+    vga_print_centered("PONG", 0);
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
     char p1_score[10];

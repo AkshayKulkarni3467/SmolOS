@@ -291,7 +291,7 @@ void life_draw_grid(void) {
 void life_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_WHITE, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== CONWAY'S LIFE SIMULATOR ===", 0);
+    vga_print_centered("CONWAY'S LIFE SIMULATOR", 0);
     
     vga_set_color(VGA_WHITE, VGA_BLUE);
     char info[80];
@@ -475,7 +475,7 @@ void life_draw_help(void) {
     
     vga_set_color(VGA_YELLOW, VGA_BLUE);
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== HELP & CONTROLS ===", 0);
+    vga_print_centered("HELP & CONTROLS", 0);
     
     vga_set_color(VGA_LGREEN, VGA_BLCK);
     const char* sections[] = {

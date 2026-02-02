@@ -525,7 +525,7 @@ void lander_draw_particles(void) {
 void lander_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== LUNAR LANDER ===", 0);
+    vga_print_centered("LUNAR LANDER", 0);
     
     const char* diff_names[] = {"EASY", "MEDIUM", "HARD", "EXTREME"};
     vga_set_color(VGA_LCYAN, VGA_BLUE);

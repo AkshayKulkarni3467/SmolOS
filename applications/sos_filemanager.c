@@ -691,7 +691,7 @@ void file_manager_command(void) {
         }
         else if (strcmp(input, "help") == 0) {
             vga_set_color(VGA_LCYAN, VGA_BLCK);
-            vga_println("=== File Manager Commands ===");
+            vga_println("File Manager Commands");
             vga_set_color(VGA_WHITE, VGA_BLCK);
             vga_println("  list / ls          - List all files");
             vga_println("  view <file>        - View file content");
@@ -709,7 +709,7 @@ void file_manager_command(void) {
             int count = fat16_list_files(files, 50);
             
             vga_set_color(VGA_LCYAN, VGA_BLCK);
-            vga_println("=== Files ===");
+            vga_println("Files");
             vga_set_color(VGA_YELLOW, VGA_BLCK);
             vga_println("Name                    Size        ");
             vga_println("--------------------------------------");
@@ -829,7 +829,7 @@ void file_manager_command(void) {
                 uint32_t size = fat16_get_file_size(filename);
                 
                 vga_set_color(VGA_LCYAN, VGA_BLCK);
-                vga_println("=== File Information ===");
+                vga_println("File Information");
                 vga_set_color(VGA_YELLOW, VGA_BLCK);
                 vga_print("Name: ");
                 vga_set_color(VGA_WHITE, VGA_BLCK);
@@ -859,7 +859,7 @@ void file_manager_command(void) {
             uint32_t used = total - free;
             
             vga_set_color(VGA_LCYAN, VGA_BLCK);
-            vga_println("=== Disk Information ===");
+            vga_println("Disk Information");
             
             vga_set_color(VGA_YELLOW, VGA_BLCK);
             vga_print("Total Space: ");

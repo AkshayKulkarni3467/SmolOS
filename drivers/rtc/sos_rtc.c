@@ -542,7 +542,7 @@ static void wait_seconds(int seconds) {
 
 void shutdown(void) {
     vga_clear();
-    vga_println("=== SYSTEM SHUTDOWN ===");
+    vga_println("SYSTEM SHUTDOWN");
     vga_println("Goodbye from SmolOS!");
     vga_println("Shutting down in 3 seconds...");
     
@@ -576,7 +576,7 @@ void shutdown(void) {
 
 void reboot(void) {
     vga_clear();
-    vga_println("=== SYSTEM REBOOT ===");
+    vga_println("SYSTEM REBOOT");
     vga_println("Restarting SmolOS in 3 seconds...");
     
     vga_print("3...");

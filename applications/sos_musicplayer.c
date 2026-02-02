@@ -603,7 +603,7 @@ void musicplayer_cleanup(void) {
 void musicplayer_demo_mode(void) {
     vga_clear();
     vga_println("SmolOS Audio System Demo");
-    vga_println("========================");
+    vga_println("-----------------------");
     vga_println("");
     vga_println("Playing demo melodies...");
     vga_println("");

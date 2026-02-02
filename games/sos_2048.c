@@ -505,7 +505,7 @@ void game_2048_draw_ui(void) {
 
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== 2048 GAME ===", 0);
+    vga_print_centered("2048 GAME", 0);
     vga_set_color(VGA_LCYAN, VGA_BLUE);
     vga_print_centered("Join the numbers to reach 2048!", 1);
 

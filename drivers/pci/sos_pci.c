@@ -225,7 +225,7 @@ void pci_list_devices(void) {
     
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== PCI DEVICE ENUMERATION ===", 0);
+    vga_print_centered("PCI DEVICE ENUMERATION", 0);
     
     char count_str[32];
     strcpy(count_str, "Found ");
@@ -325,7 +325,7 @@ void pci_show_device_details(int index) {
     
     vga_fill_rect(0, 0, 80, 3, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== PCI DEVICE DETAILS ===", 1);
+    vga_print_centered("PCI DEVICE DETAILS", 1);
     
     vga_draw_box_double(5, 4, 70, 17, VGA_CYAN, VGA_BLCK);
     

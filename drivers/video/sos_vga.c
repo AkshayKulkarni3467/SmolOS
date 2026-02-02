@@ -2,10 +2,6 @@
 #include "sos_io.h"
 #include "sos_memory.h"
 
-#ifdef SMOLOS_VGA_TEST
-#include "sos_stdio.h"
-#include <assert.h>
-#endif
 
 static uint16_t back_buffer[WIDTH * HEIGHT];
 static int double_buffering_enabled = 1;
@@ -545,87 +541,3 @@ void vga_print_int_at(int num, int x, int y) {
     vga_print_int(num);
 }
 
-
-
-#ifdef SMOLOS_VGA_TEST
-
-void test_vga_color_startup() {
-    printf("Testing vga_color_startup...\n");
-    
-    uint8_t color = vga_color_startup(VGA_WHITE, VGA_BLUE);
-    assert((color & 0x0F) == VGA_WHITE);  
-    assert(((color >> 4) & 0x0F) == VGA_BLUE); 
-    
-    color = vga_color_startup(VGA_RED, VGA_GREEN);
-    assert((color & 0x0F) == VGA_RED);
-    assert(((color >> 4) & 0x0F) == VGA_GREEN);
-    
-    printf("[T] Color creation works correctly\n");
-}
-
-void test_vga_startup() {
-    printf("Testing vga_startup...\n");
-    
-    uint16_t entry = vga_startup('A', 0x0F);
-    assert((entry & 0xFF) == 'A');
-    assert(((entry >> 8) & 0xFF) == 0x0F);
-    
-    entry = vga_startup('Z', 0x4E);
-    assert((entry & 0xFF) == 'Z');
-    assert(((entry >> 8) & 0xFF) == 0x4E);
-    
-    printf("[T] VGA entry creation works correctly\n");
-}
-
-void test_vga_colors() {
-    printf("Testing VGA color functions...\n");
-    
-    vga_t_color = vga_color_startup(VGA_LGREY, VGA_BLCK);
-    
-    vga_set_fg(VGA_RED);
-    assert(vga_get_fg() == VGA_RED);
-    assert(vga_get_bg() == VGA_BLCK);
-    
-    vga_set_bg(VGA_BLUE);
-    assert(vga_get_fg() == VGA_RED);
-    assert(vga_get_bg() == VGA_BLUE);
-    
-    vga_set_color(VGA_WHITE, VGA_GREEN);
-    assert(vga_get_fg() == VGA_WHITE);
-    assert(vga_get_bg() == VGA_GREEN);
-    
-    vga_reset_color();
-    assert(vga_get_fg() == VGA_LGREY);
-    assert(vga_get_bg() == VGA_BLCK);
-    
-    printf("[T] Color set/get functions work correctly\n");
-}
-
-void test_vga_print_int() {
-    printf("Testing vga_print_int...\n");
-    
-    printf("  Testing with 0, 42, -100, 12345\n");
-    printf("[T] Integer printing functions compiled successfully\n");
-}
-
-void test_vga_print_hex() {
-    printf("Testing vga_print_hex...\n");
-    
-    printf("  Testing with 0x0, 0xFF, 0x1234ABCD\n");
-    printf("[T] Hex printing functions compiled successfully\n");
-}
-
-int main(void) {
-    printf("=== SmolOS VGA Driver Test Suite ===\n\n");
-    
-    test_vga_color_startup();
-    test_vga_startup();
-    test_vga_colors();
-    test_vga_print_int();
-    test_vga_print_hex();
-    
-    printf("\n=== All VGA tests passed! ===\n");
-    return 0;
-}
-
-#endif

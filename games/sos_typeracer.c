@@ -829,7 +829,7 @@ void typeracer_draw_explosions(void) {
 void typeracer_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== TYPE-RACER ===", 0);
+    vga_print_centered("TYPE-RACER", 0);
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
     char score_str[30];

@@ -249,7 +249,7 @@ void snake_draw_food(void) {
 void snake_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== SNAKE GAME ===", 0);
+    vga_print_centered("SNAKE GAME", 0);
     
     vga_draw_box_single(0, 23, 40, 2, VGA_YELLOW, VGA_BLCK);
     vga_set_color(VGA_YELLOW, VGA_BLCK);

@@ -717,7 +717,7 @@ void mirror_draw_mirror_palette(void) {
 void mirror_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_WHITE, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== MIRROR MAZE ===", 0);
+    vga_print_centered("MIRROR MAZE", 0);
     
     vga_set_color(VGA_WHITE, VGA_BLUE);
     
@@ -865,7 +865,7 @@ void mirror_draw_help(void) {
     
     vga_set_color(VGA_YELLOW, VGA_BLUE);
     vga_fill_rect(0, 0, 80, 1, ' ', VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== HELP & CONTROLS ===", 0);
+    vga_print_centered("HELP & CONTROLS", 0);
     
     const char* help_text[] = {
         "OBJECTIVE:",

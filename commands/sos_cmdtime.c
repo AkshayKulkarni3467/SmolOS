@@ -186,7 +186,7 @@ void cmd_datetime(CommandArgs args) {
     rtc_format_date(&time, date_str);
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    print_at(25, 9, "=== Date & Time ===", VGA_YELLOW, VGA_BLCK);
+    print_at(25, 9, "Date & Time", VGA_YELLOW, VGA_BLCK);
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
     print_at(18, 11, "Date:  ", VGA_LCYAN, VGA_BLCK);
@@ -242,7 +242,7 @@ void cmd_clock(CommandArgs args) {
     vga_clear();
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    vga_print_centered("=== Live Clock ===", 2);
+    vga_print_centered("Live Clock", 2);
     vga_set_color(VGA_DGREY, VGA_BLCK);
     vga_print_centered("Press ESC to exit", 23);
     vga_set_color(VGA_WHITE, VGA_BLCK);
@@ -501,7 +501,7 @@ void cmd_pituptime(CommandArgs args) {
 
 void cmd_timer(CommandArgs args) {
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== Performance Timer Demo ===");
+    print_with_scroll("Performance Timer Demo");
     print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);
@@ -546,7 +546,7 @@ void cmd_stopwatch(CommandArgs args) {
     
     vga_draw_box_double(20, 5, 40, 12, VGA_CYAN, VGA_BLCK);
     vga_set_color(VGA_YELLOW, VGA_BLCK);
-    vga_print_centered("=== Stopwatch ===", 6);
+    vga_print_centered("Stopwatch", 6);
     
     vga_set_color(VGA_DGREY, VGA_BLCK);
     vga_print_centered("SPACE = Start/Stop", 15);
@@ -738,7 +738,7 @@ void cmd_countdown(CommandArgs args) {
     }
     
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== Countdown ===");
+    print_with_scroll("Countdown");
     print_with_scroll("");
     
     int countdown_row = vga_t_row;
@@ -841,7 +841,7 @@ void cmd_countdown(CommandArgs args) {
 
 void cmd_reaction(CommandArgs args) {
     vga_set_color(VGA_LCYAN, VGA_BLCK);
-    print_with_scroll("=== Reaction Time Test ===");
+    print_with_scroll("Reaction Time Test");
     print_with_scroll("");
     
     vga_set_color(VGA_YELLOW, VGA_BLCK);

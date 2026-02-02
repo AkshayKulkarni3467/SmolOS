@@ -543,7 +543,7 @@ void ttt_draw_board(void) {
 void ttt_draw_ui(void) {
     vga_fill_rect(0, 0, 80, 2, ' ', VGA_YELLOW, VGA_BLUE);
     vga_set_color(VGA_YELLOW, VGA_BLUE);
-    vga_print_centered("=== TIC-TAC-TOE ===", 0);
+    vga_print_centered("TIC-TAC-TOE", 0);
 
     const char* mode_names[] = {
         "Player vs Player",
