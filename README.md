@@ -163,27 +163,27 @@ make clean
 SmolOS targets **32-bit x86 (i386)** and boots via the **Multiboot v1** specification. GRUB or QEMU's `-kernel` flag can load it directly.
 
 ```
-                                            ┌─────────────────────────────────────────────┐
-                                            │                  Applications               │
-                                            │  Calculator  FileManager  Todo  ArtGallery  │
-                                            │  MusicPlayer  GUI  Games (×14)              │
-                                            ├─────────────────────────────────────────────┤
-                                            │              Shell / Commands               │
-                                            │  I/O layer · command dispatch · history     │
-                                            ├─────────────────────────────────────────────┤
-                                            │                   Drivers                   │
-                                            │  VGA · Keyboard · Mouse · PIT · RTC · ATA   │
-                                            │  FAT16 · Audio · PCI · E1000 · IDT/IRQ      │
-                                            ├─────────────────────────────────────────────┤
-                                            │              Freestanding Libraries         │
-                                            │  sos_string · sos_memory · sos_stdio        │
-                                            │  sos_div64 · sos_stdint · sos_stddef        │
-                                            ├─────────────────────────────────────────────┤
-                                            │            Kernel (sos_kernel.c)            │
-                                            ├─────────────────────────────────────────────┤
-                                            │         Bootloader (Multiboot, IDT)         │
-                                            └─────────────────────────────────────────────┘
-                                                        x86 bare metal / QEMU
+                                ┌─────────────────────────────────────────────┐
+                                │                  Applications               │
+                                │  Calculator  FileManager  Todo  ArtGallery  │
+                                │  MusicPlayer  GUI  Games (×14)              │
+                                ├─────────────────────────────────────────────┤
+                                │              Shell / Commands               │
+                                │  I/O layer · command dispatch · history     │
+                                ├─────────────────────────────────────────────┤
+                                │                   Drivers                   │
+                                │  VGA · Keyboard · Mouse · PIT · RTC · ATA   │
+                                │  FAT16 · Audio · PCI · E1000 · IDT/IRQ      │
+                                ├─────────────────────────────────────────────┤
+                                │              Freestanding Libraries         │
+                                │  sos_string · sos_memory · sos_stdio        │
+                                │  sos_div64 · sos_stdint · sos_stddef        │
+                                ├─────────────────────────────────────────────┤
+                                │            Kernel (sos_kernel.c)            │
+                                ├─────────────────────────────────────────────┤
+                                │         Bootloader (Multiboot, IDT)         │
+                                └─────────────────────────────────────────────┘
+                                            x86 bare metal / QEMU
 ```
 
 The kernel is loaded at **1 MiB** (as required by Multiboot). There is no virtual memory or paging — the kernel runs in a flat 32-bit physical address space. An 8 KiB stack is statically allocated in BSS.
